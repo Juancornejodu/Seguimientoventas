@@ -97,7 +97,7 @@
         fetch(url, {
             method: 'POST',
             mode: 'no-cors',
-            body: formData
+            body: new URLSearchParams(formData)
         }).then(() => {
             alert('¡Datos guardados con éxito!');
             form.reset();
