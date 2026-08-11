@@ -14,10 +14,10 @@
         .tab-content.active { display: block; }
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; font-size: 14px; }
-        /* Se ajustó el select múltiple para que se vea mejor */
         input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit;}
         select[multiple] { height: 140px; padding: 5px; } 
         button.btn-submit { width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
+        
         /* Dashboard Styles */
         .dash-card { background: #f8f9fa; border-left: 4px solid #0056b3; padding: 15px; margin-bottom: 15px; border-radius: 4px; }
         .dash-card h3 { margin: 0 0 10px 0; font-size: 16px; color: #333; }
@@ -25,6 +25,13 @@
         .alert-red { border-left-color: #dc3545; }
         .alert-red .dash-number { color: #dc3545; }
         .ayuda-texto { font-size: 12px; color: #666; margin-top: 4px; display: block; }
+        
+        /* Estilos para las listas de visitas */
+        .visit-list { list-style: none; padding: 0; margin: 10px 0 0 0; }
+        .visit-item { background: #fff; border: 1px solid #e0e0e0; padding: 10px; margin-bottom: 8px; border-radius: 4px; font-size: 13px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .visit-item strong { color: #0056b3; display: block; font-size: 14px; margin-bottom: 3px;}
+        .visit-meta { color: #666; font-size: 12px; display: flex; justify-content: space-between; margin-top: 4px;}
+        .visit-empty { text-align: center; color: #999; font-style: italic; padding: 10px; font-size: 13px; }
     </style>
 </head>
 <body>
@@ -44,7 +51,6 @@
             <div class="form-group"><label>Contacto (Decisor) *</label><input type="text" name="decisor" required></div>
             <div class="form-group"><label>WhatsApp *</label><input type="tel" name="telefono" required></div>
             
-            <!-- CAMBIO AQUÍ: Select con atributo 'multiple' y nueva opción 'Todas' -->
             <div class="form-group">
                 <label>Soporte Ofrecido *</label>
                 <select name="soporte" id="select-soporte" multiple required>
@@ -70,6 +76,23 @@
 
     <!-- PESTAÑA: DASHBOARD -->
     <div id="tab-dash" class="tab-content">
+        
+        <!-- NUEVO: Visitas de Hoy -->
+        <div class="dash-card">
+            <h3>📅 Visitas de Hoy</h3>
+            <ul class="visit-list" id="visitas-hoy">
+                <li class="visit-empty">Haz clic en Actualizar para cargar la agenda</li>
+            </ul>
+        </div>
+
+        <!-- NUEVO: Visitas de Mañana -->
+        <div class="dash-card">
+            <h3>📆 Visitas de Mañana</h3>
+            <ul class="visit-list" id="visitas-manana">
+                <li class="visit-empty">Haz clic en Actualizar para cargar la agenda</li>
+            </ul>
+        </div>
+
         <div class="dash-card">
             <h3>📈 Visitas de la Semana</h3>
             <div class="dash-number">0 / 30</div>
@@ -80,12 +103,8 @@
             <div class="dash-number">0</div>
             <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">Requieren envío de cotización / cierre</p>
         </div>
-        <div class="dash-card alert-red">
-            <h3>⏰ Seguimientos Vencidos/Hoy</h3>
-            <div class="dash-number">0</div>
-            <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">Revisar agenda de contactos pendientes</p>
-        </div>
-        <button class="btn-submit" style="background-color:#0056b3" onclick="alert('Esta función traerá los datos desde Sheets en tiempo real.')">🔄 Actualizar Dashboard</button>
+
+        <button class="btn-submit" style="background-color:#0056b3" onclick="simularTraerDatos()">🔄 Actualizar Dashboard</button>
     </div>
 </div>
 
@@ -110,20 +129,14 @@
         btn.disabled = true;
 
         const formData = new FormData(form);
-
-        // --- CAMBIO AQUÍ: Lógica para agrupar las opciones múltiples ---
         const selectSoporte = document.getElementById('select-soporte');
-        // Obtenemos todas las opciones que el usuario marcó
         const opcionesSeleccionadas = Array.from(selectSoporte.selectedOptions).map(opt => opt.value);
         
-        // Si entre las opciones seleccionaron "Todas", mandamos solo la palabra "Todas"
         if (opcionesSeleccionadas.includes("Todas")) {
             formData.set('soporte', 'Todas');
         } else {
-            // Si eligieron varias específicas, las unimos con una coma (Ej: "UCASAL, Galería Margalef")
             formData.set('soporte', opcionesSeleccionadas.join(' / '));
         }
-        // --------------------------------------------------------------
 
         const url = 'https://script.google.com/macros/s/AKfycbzOpgu-CWOkH3rPSa6_I_Eq40CU43E3ASSB0W5XvY1fSqGTXawKovCCm3SAatk5giyKxA/exec';
 
@@ -141,6 +154,41 @@
             btn.innerText = '📤 Guardar en Sheets';
             btn.disabled = false;
         });
+    }
+
+    // Esta función simula visualmente cómo se verían los datos cargados desde tu Sheets
+    function simularTraerDatos() {
+        // Datos de ejemplo para Hoy
+        document.getElementById('visitas-hoy').innerHTML = `
+            <li class="visit-item">
+                <strong>Corralón El Amigo</strong>
+                <span>Rubro: Construcción y Corralón</span>
+                <div class="visit-meta">
+                    <span>📍 Zona Sur</span>
+                    <span>📞 Contacto WhatsApp</span>
+                </div>
+            </li>
+            <li class="visit-item">
+                <strong>Farmacia San Francisco</strong>
+                <span>Rubro: Salud y Farmacia</span>
+                <div class="visit-meta">
+                    <span>📍 San Lorenzo Chico</span>
+                    <span>🤝 Visita Presencial</span>
+                </div>
+            </li>
+        `;
+
+        // Datos de ejemplo para Mañana
+        document.getElementById('visitas-manana').innerHTML = `
+            <li class="visit-item">
+                <strong>Concesionaria Centro</strong>
+                <span>Rubro: Automotor</span>
+                <div class="visit-meta">
+                    <span>📍 Centro - Microcentro</span>
+                    <span>🤝 Reunión Agendada</span>
+                </div>
+            </li>
+        `;
     }
 </script>
 </body>
