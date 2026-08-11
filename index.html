@@ -1,4 +1,3 @@
-# Seguimientoventas
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -15,7 +14,9 @@
         .tab-content.active { display: block; }
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; font-size: 14px; }
-        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        /* Se ajustó el select múltiple para que se vea mejor */
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit;}
+        select[multiple] { height: 140px; padding: 5px; } 
         button.btn-submit { width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
         /* Dashboard Styles */
         .dash-card { background: #f8f9fa; border-left: 4px solid #0056b3; padding: 15px; margin-bottom: 15px; border-radius: 4px; }
@@ -23,6 +24,7 @@
         .dash-number { font-size: 24px; font-weight: bold; color: #0056b3; }
         .alert-red { border-left-color: #dc3545; }
         .alert-red .dash-number { color: #dc3545; }
+        .ayuda-texto { font-size: 12px; color: #666; margin-top: 4px; display: block; }
     </style>
 </head>
 <body>
@@ -41,7 +43,23 @@
             <div class="form-group"><label>Rubro *</label><select name="rubro" required><option value="Construcción y Corralón">Construcción y Corralón</option><option value="Gastronomía">Gastronomía</option><option value="Indumentaria y Retail">Indumentaria y Retail</option><option value="Salud y Farmacia">Salud y Farmacia</option><option value="Automotor">Automotor</option><option value="Otro">Otro</option></select></div>
             <div class="form-group"><label>Contacto (Decisor) *</label><input type="text" name="decisor" required></div>
             <div class="form-group"><label>WhatsApp *</label><input type="tel" name="telefono" required></div>
-            <div class="form-group"><label>Soporte Ofrecido *</label><select name="soporte" required><option value="Shopping El Punto">Shopping El Punto de San Lorenzo chico</option><option value="Galería La Continental">Galería La Continental</option><option value="Galería El Palacio">Galería El Palacio</option><option value="Galería Margalef">Galería Margalef</option><option value="Galería Buenos Aires">Galería Buenos Aires</option><option value="UCASAL">UCASAL</option><option value="Wa">Wa (En negociación)</option><option value="Mix Multisoporte">Mix Multisoporte</option></select></div>
+            
+            <!-- CAMBIO AQUÍ: Select con atributo 'multiple' y nueva opción 'Todas' -->
+            <div class="form-group">
+                <label>Soporte Ofrecido *</label>
+                <select name="soporte" id="select-soporte" multiple required>
+                    <option value="Todas">🌟 Todas</option>
+                    <option value="Shopping El Punto">Shopping El Punto de San Lorenzo chico</option>
+                    <option value="Galería La Continental">Galería La Continental</option>
+                    <option value="Galería El Palacio">Galería El Palacio</option>
+                    <option value="Galería Margalef">Galería Margalef</option>
+                    <option value="Galería Buenos Aires">Galería Buenos Aires</option>
+                    <option value="UCASAL">UCASAL</option>
+                    <option value="Wa">Wa (En negociación)</option>
+                </select>
+                <span class="ayuda-texto">En PC: Mantén presionado Ctrl (o Cmd) para elegir varias. En celular: Toca varias opciones.</span>
+            </div>
+
             <div class="form-group"><label>Acción Ejecutada *</label><select name="accion" required><option value="Visita Presencial">Visita Presencial</option><option value="Contacto por WhatsApp">Contacto por WhatsApp</option><option value="Reunión Agendada">Reunión Agendada</option></select></div>
             <div class="form-group"><label>Interés *</label><select name="interes" required><option value="Alto">🔥 Alto (Cotización)</option><option value="Medio">🟡 Medio (Info General)</option><option value="Bajo">🧊 Bajo (Sin ppto)</option><option value="Nulo">❌ Nulo</option></select></div>
             <div class="form-group"><label>Próximo Contacto *</label><input type="date" name="proximo_paso" required></div>
@@ -92,6 +110,21 @@
         btn.disabled = true;
 
         const formData = new FormData(form);
+
+        // --- CAMBIO AQUÍ: Lógica para agrupar las opciones múltiples ---
+        const selectSoporte = document.getElementById('select-soporte');
+        // Obtenemos todas las opciones que el usuario marcó
+        const opcionesSeleccionadas = Array.from(selectSoporte.selectedOptions).map(opt => opt.value);
+        
+        // Si entre las opciones seleccionaron "Todas", mandamos solo la palabra "Todas"
+        if (opcionesSeleccionadas.includes("Todas")) {
+            formData.set('soporte', 'Todas');
+        } else {
+            // Si eligieron varias específicas, las unimos con una coma (Ej: "UCASAL, Galería Margalef")
+            formData.set('soporte', opcionesSeleccionadas.join(' / '));
+        }
+        // --------------------------------------------------------------
+
         const url = 'https://script.google.com/macros/s/AKfycbzOpgu-CWOkH3rPSa6_I_Eq40CU43E3ASSB0W5XvY1fSqGTXawKovCCm3SAatk5giyKxA/exec';
 
         fetch(url, {
