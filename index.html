@@ -7,8 +7,8 @@
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 10px; }
         .container { max-width: 500px; margin: 0 auto; background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .nav-tabs { display: flex; margin-bottom: 20px; }
-        .nav-tabs button { flex: 1; padding: 10px; cursor: pointer; background: #eee; border: 1px solid #ccc; font-weight: bold; }
+        .nav-tabs { display: flex; margin-bottom: 20px; gap: 5px; }
+        .nav-tabs button { flex: 1; padding: 10px 5px; cursor: pointer; background: #eee; border: 1px solid #ccc; font-weight: bold; border-radius: 4px; font-size: 13px;}
         .nav-tabs button.active { background: #0056b3; color: white; border: none; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
@@ -18,7 +18,6 @@
         select[multiple] { height: 140px; padding: 5px; } 
         button.btn-submit { width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
         
-        /* Dashboard Styles */
         .dash-card { background: #f8f9fa; border-left: 4px solid #0056b3; padding: 15px; margin-bottom: 15px; border-radius: 4px; }
         .dash-card h3 { margin: 0 0 10px 0; font-size: 16px; color: #333; }
         .dash-number { font-size: 24px; font-weight: bold; color: #0056b3; }
@@ -26,23 +25,31 @@
         .alert-red .dash-number { color: #dc3545; }
         .ayuda-texto { font-size: 12px; color: #666; margin-top: 4px; display: block; }
         
-        /* Estilos para las listas de visitas */
         .visit-list { list-style: none; padding: 0; margin: 10px 0 0 0; }
         .visit-item { background: #fff; border: 1px solid #e0e0e0; padding: 10px; margin-bottom: 8px; border-radius: 4px; font-size: 13px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .visit-item .header-item { display: flex; justify-content: space-between; align-items: flex-start; }
         .visit-item strong { color: #0056b3; display: block; font-size: 14px; margin-bottom: 3px;}
-        .visit-meta { color: #666; font-size: 12px; display: flex; justify-content: space-between; margin-top: 4px;}
+        .visit-meta { color: #666; font-size: 12px; display: flex; justify-content: space-between; margin-top: 8px;}
         .visit-empty { text-align: center; color: #999; font-style: italic; padding: 10px; font-size: 13px; }
+        
+        .btn-update { background-color: #ffc107; border: none; border-radius: 4px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; color: #333; }
+        
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); }
+        .modal-content { background-color: #fff; margin: 20% auto; padding: 20px; border-radius: 8px; width: 85%; max-width: 400px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        .close-btn { color: #aaa; float: right; font-size: 24px; font-weight: bold; cursor: pointer; margin-top: -10px;}
+        .close-btn:hover { color: #000; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="nav-tabs">
-        <button id="btn-form" class="active" onclick="switchTab('form')">📝 Nueva Visita</button>
-        <button id="btn-dash" onclick="switchTab('dash')">📊 Mi Dashboard</button>
+        <button id="btn-form" class="active" onclick="switchTab('form')">📝 Nuevo</button>
+        <button id="btn-dash" onclick="switchTab('dash')">📊 Panel</button>
+        <button id="btn-directorio" onclick="switchTab('directorio')">📇 Directorio</button>
     </div>
 
-    <!-- PESTAÑA: FORMULARIO -->
+    <!-- PESTAÑA 1: FORMULARIO -->
     <div id="tab-form" class="tab-content active">
         <form id="crmForm">
             <div class="form-group"><label>Comercio / Empresa *</label><input type="text" name="empresa" required></div>
@@ -63,7 +70,6 @@
                     <option value="UCASAL">UCASAL</option>
                     <option value="Wa">Wa (En negociación)</option>
                 </select>
-                <span class="ayuda-texto">En PC: Mantén presionado Ctrl (o Cmd) para elegir varias. En celular: Toca varias opciones.</span>
             </div>
 
             <div class="form-group"><label>Acción Ejecutada *</label><select name="accion" required><option value="Visita Presencial">Visita Presencial</option><option value="Contacto por WhatsApp">Contacto por WhatsApp</option><option value="Reunión Agendada">Reunión Agendada</option></select></div>
@@ -82,48 +88,98 @@
                 </select>
             </div>
 
-            <div class="form-group"><label>Notas</label><textarea name="notas"></textarea></div>
-            <button type="button" id="submitBtn" class="btn-submit" onclick="enviarDatos()">📤 Guardar en Sheets</button>
+            <div class="form-group"><label>Notas Iniciales</label><textarea name="notas"></textarea></div>
+            <button type="button" id="submitBtn" class="btn-submit" onclick="enviarDatos()">📤 Guardar Nuevo Cliente</button>
         </form>
     </div>
 
-    <!-- PESTAÑA: DASHBOARD OPERATIVO -->
+    <!-- PESTAÑA 2: DASHBOARD -->
     <div id="tab-dash" class="tab-content">
-        
         <div class="dash-card alert-red">
-            <h3>🚨 Briefs Pendientes (SLA < 24h)</h3>
-            <ul class="visit-list" id="pendientes-propuesta">
-                <li class="visit-empty">Cargando datos...</li>
-            </ul>
-            <p class="ayuda-texto">Leads calientes esperando PDF y Mockup.</p>
+            <h3>🚨 Briefs Pendientes</h3>
+            <ul class="visit-list" id="pendientes-propuesta"><li class="visit-empty">Cargando datos...</li></ul>
         </div>
-
         <div class="dash-card">
             <h3>📞 Follow-Ups Programados</h3>
-            <ul class="visit-list" id="followups-hoy">
-                <li class="visit-empty">Cargando datos...</li>
-            </ul>
-            <p class="ayuda-texto">Llamados a las 48hs o reuniones agendadas.</p>
+            <ul class="visit-list" id="followups-hoy"><li class="visit-empty">Cargando datos...</li></ul>
         </div>
-
         <div style="display: flex; gap: 10px;">
             <div class="dash-card" style="flex: 1;">
-                <h3>🏃 Total Visitas</h3>
-                <div class="dash-number" id="kpi-visitas">0</div>
+                <h3>🏃 Visitas (Semana)</h3>
+                <div class="dash-number" id="kpi-visitas">0 / 15</div>
+                <p class="ayuda-texto">Lunes a Viernes</p>
             </div>
             <div class="dash-card" style="flex: 1;">
-                <h3>🔥 Alta Intención</h3>
+                <h3>🔥 Calientes</h3>
                 <div class="dash-number" id="kpi-calientes">0</div>
             </div>
         </div>
+        <button id="btn-sync" class="btn-submit" style="background-color:#0056b3" onclick="traerDatosReales()">🔄 Sincronizar</button>
+    </div>
 
-        <button id="btn-sync" class="btn-submit" style="background-color:#0056b3" onclick="traerDatosReales()">🔄 Sincronizar con Sheets</button>
+    <!-- PESTAÑA 3: DIRECTORIO -->
+    <div id="tab-directorio" class="tab-content">
+        <div class="dash-card">
+            <h3>📇 Todos los Clientes</h3>
+            <p class="ayuda-texto" style="margin-bottom:10px;">Buscá un cliente para agregar info o registrar una nueva acción en su historial.</p>
+            <input type="text" id="buscador" placeholder="Buscar por nombre o rubro..." onkeyup="filtrarDirectorio()" style="margin-bottom: 15px;">
+            <ul class="visit-list" id="lista-directorio">
+                <li class="visit-empty">Sincronizá el panel para ver los clientes.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL POP-UP -->
+<div id="updateModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="cerrarModal()">&times;</span>
+        <h3 id="modalEmpresaNombre" style="margin-top:0; color:#0056b3;">Registrar Interacción</h3>
+        <p class="ayuda-texto">Se guardará automáticamente en el historial.</p>
+        
+        <form id="updateForm">
+            <input type="hidden" id="update_row_index" name="row_index">
+            <input type="hidden" name="action_type" value="update">
+            
+            <div class="form-group">
+                <label>Nuevo Estado</label>
+                <select name="estado_pipeline" required>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="Propuesta Enviada">Propuesta Enviada</option>
+                    <option value="En Negociación">En Negociación</option>
+                    <option value="Cerrado Ganado">Cerrado Ganado 🏆</option>
+                    <option value="Perdido">Perdido ❌</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Próxima Acción a realizar</label>
+                <select name="detalle_proxima_accion" required>
+                    <option value="Enviar Propuesta">Enviar Propuesta</option>
+                    <option value="Nueva Visita presencial">Nueva Visita presencial</option>
+                    <option value="Llamada">Llamada</option>
+                    <option value="Mensaje de WhatsApp">Mensaje de WhatsApp</option>
+                    <option value="Cierre / Envío Kit Técnico">Cierre / Envío Kit Técnico</option>
+                    <option value="Ninguna">Ninguna</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Fecha de la Próxima Acción</label>
+                <input type="date" name="proximo_paso" required>
+            </div>
+            <div class="form-group">
+                <label>Notas / Info nueva (Se suma al historial)</label>
+                <textarea name="nota_actualizacion" placeholder="Ej: Me pasó el teléfono del socio para que le mandemos la cotización."></textarea>
+            </div>
+            <button type="button" id="btnActualizarModal" class="btn-submit" style="background-color:#ffc107; color:#333;" onclick="enviarActualizacion()">Guardar Interacción</button>
+        </form>
     </div>
 </div>
 
 <script>
     // ACA TENES QUE PEGAR EL LINK NUEVO QUE TE DE APPS SCRIPT
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxA2bVoIUqe4UNhyhFbiO5dFnvLc5ubXpgWOw6iUhbs-2HiYmHGhIqZyPb9Q5A4VR4iMw/exec';
+    const SCRIPT_URL = 'PONER_TU_LINK_AQUI';
+
+    let datosGlobales = [];
 
     function switchTab(tabId) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -131,121 +187,135 @@
         document.getElementById('tab-' + tabId).classList.add('active');
         document.getElementById('btn-' + tabId).classList.add('active');
         
-        if(tabId === 'dash') {
-            traerDatosReales();
+        if(tabId === 'dash' || tabId === 'directorio') {
+            if (datosGlobales.length === 0) traerDatosReales();
         }
     }
 
     function enviarDatos() {
         const form = document.getElementById('crmForm');
         const btn = document.getElementById('submitBtn');
-        
-        if(!form.checkValidity()){
-            form.reportValidity();
-            return;
-        }
+        if(!form.checkValidity()){ form.reportValidity(); return; }
 
-        btn.innerText = 'Enviando...';
-        btn.disabled = true;
+        btn.innerText = 'Enviando...'; btn.disabled = true;
 
         const formData = new FormData(form);
         const selectSoporte = document.getElementById('select-soporte');
         const opcionesSeleccionadas = Array.from(selectSoporte.selectedOptions).map(opt => opt.value);
-        
-        if (opcionesSeleccionadas.includes("Todas")) {
-            formData.set('soporte', 'Todas');
-        } else {
-            formData.set('soporte', opcionesSeleccionadas.join(' / '));
-        }
+        formData.set('soporte', opcionesSeleccionadas.includes("Todas") ? 'Todas' : opcionesSeleccionadas.join(' / '));
 
-        fetch(SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            body: new URLSearchParams(formData)
-        }).then(() => {
-            alert('¡Datos guardados con éxito!');
+        fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: new URLSearchParams(formData) })
+        .then(() => {
+            alert('¡Cliente nuevo guardado!');
             form.reset();
-            btn.innerText = '📤 Guardar en Sheets';
-            btn.disabled = false;
-        }).catch(error => {
+            btn.innerText = '📤 Guardar Nuevo Cliente'; btn.disabled = false;
+            traerDatosReales();
+        }).catch(() => {
             alert('Error de conexión.');
-            btn.innerText = '📤 Guardar en Sheets';
-            btn.disabled = false;
+            btn.innerText = '📤 Guardar Nuevo Cliente'; btn.disabled = false;
         });
     }
 
     function traerDatosReales() {
-        if(SCRIPT_URL === 'PONER_TU_LINK_AQUI') {
-            alert('Falta pegar el link de Apps Script en el código HTML.');
-            return;
-        }
-
+        if(SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbzN0h2ibIJOKJT6P2ijlp3tq9EIxr61ywyqseNxg3yGcF8WhZr8hFYesvK63SPLqmKWDQ/exec') return alert('Falta link Apps Script');
         const btn = document.getElementById('btn-sync');
-        if(btn) {
-            btn.innerText = '⏳ Sincronizando...';
-            btn.disabled = true;
-        }
+        if(btn) { btn.innerText = '⏳ Sincronizando...'; btn.disabled = true; }
 
         fetch(SCRIPT_URL)
-            .then(response => {
-                if (!response.ok) throw new Error("Fallo la conexión GET");
-                return response.json();
-            })
+            .then(r => r.json())
             .then(datos => {
-                renderizarDashboard(datos);
-                if(btn) {
-                    btn.innerText = '🔄 Sincronizar con Sheets';
-                    btn.disabled = false;
-                }
-            })
-            .catch(error => {
-                console.error(error);
-                alert('Error al leer los datos de Sheets.');
-                if(btn) {
-                    btn.innerText = '🔄 Sincronizar con Sheets';
-                    btn.disabled = false;
-                }
+                datosGlobales = datos.reverse();
+                renderizarDashboard(datosGlobales);
+                renderizarDirectorio(datosGlobales);
+                if(btn) { btn.innerText = '🔄 Sincronizar'; btn.disabled = false; }
+            }).catch(e => {
+                alert('Error al leer datos.');
+                if(btn) { btn.innerText = '🔄 Sincronizar'; btn.disabled = false; }
             });
     }
 
     function renderizarDashboard(datos) {
-        // Filtrar pendientes: Interés Alto y que NO tengan estado "Propuesta Enviada" o "Cerrado"
-        const pendientes = datos.filter(fila => 
-            fila.interes && fila.interes.includes("Alto") && 
-            fila.estado_en_pipeline !== "Propuesta Enviada" && 
-            fila.estado_en_pipeline !== "Cerrado"
-        );
-        
-        const pendientesHTML = pendientes.map(p => `
-            <li class="visit-item">
-                <strong>${p.comercio}</strong>
-                <span>Pantallas: ${p.soporte_ofrecido}</span>
-                <div class="visit-meta">
-                    <span>📍 ${p.zona_geografica}</span>
-                    <span style="color:#dc3545; font-weight:bold;">⏱️ Armar Propuesta</span>
-                </div>
-            </li>
-        `).join('');
-        document.getElementById('pendientes-propuesta').innerHTML = pendientes.length ? pendientesHTML : '<li class="visit-empty">No hay propuestas pendientes. ¡Excelente!</li>';
+        const pendientes = datos.filter(f => f.interes && f.interes.includes("Alto") && (!f.estado_en_pipeline || f.estado_en_pipeline === "Pendiente"));
+        const pendientesHTML = pendientes.map(p => crearTarjetaCliente(p, '⏱️ Armar Propuesta', '#dc3545')).join('');
+        document.getElementById('pendientes-propuesta').innerHTML = pendientes.length ? pendientesHTML : '<li class="visit-empty">No hay urgencias.</li>';
 
-        // Filtrar Follow-ups: Buscar por la fecha de próximo contacto
-        const hoy = new Date().toISOString().split('T')[0];
-        const followups = datos.filter(fila => fila.fecha_de_proximo_contacto === hoy);
-        
-        const followupsHTML = followups.map(f => `
-            <li class="visit-item">
-                <strong>${f.comercio} - ${f.nombre_del_contacto}</strong>
-                <span>📞 ${f.telefono}</span>
-                <div class="visit-meta">
-                    <span style="color:#0056b3; font-weight:bold;">➡️ Hacer: ${f.detalle_proxima_accion}</span>
-                </div>
-            </li>
-        `).join('');
-        document.getElementById('followups-hoy').innerHTML = followups.length ? followupsHTML : '<li class="visit-empty">No hay seguimientos agendados para hoy.</li>';
+        const hoyStr = new Date().toISOString().split('T')[0];
+        const followups = datos.filter(f => f.fecha_de_proximo_contacto === hoyStr && f.estado_en_pipeline !== "Cerrado Ganado" && f.estado_en_pipeline !== "Perdido");
+        const followupsHTML = followups.map(f => crearTarjetaCliente(f, '➡️ Hacer: ' + f.detalle_proxima_accion, '#0056b3')).join('');
+        document.getElementById('followups-hoy').innerHTML = followups.length ? followupsHTML : '<li class="visit-empty">Nada para hoy.</li>';
 
-        // KPIs
-        document.getElementById('kpi-visitas').innerText = datos.length;
+        // LÓGICA KPI LUNES A VIERNES
+        const hoy = new Date();
+        const diaSemana = hoy.getDay(); 
+        const diffToMonday = hoy.getDate() - diaSemana + (diaSemana === 0 ? -6 : 1);
+        const fechaLunes = new Date(hoy.setDate(diffToMonday));
+        fechaLunes.setHours(0,0,0,0);
+        
+        const visitasEstaSemana = datos.filter(f => {
+            const fechaVisita = new Date(f.timestamp);
+            return fechaVisita >= fechaLunes;
+        }).length;
+        
+        document.getElementById('kpi-visitas').innerText = visitasEstaSemana + " / 15";
         document.getElementById('kpi-calientes').innerText = pendientes.length;
+    }
+
+    function renderizarDirectorio(datos) {
+        const dirHTML = datos.map(c => crearTarjetaCliente(c, 'Estado: ' + (c.estado_en_pipeline || 'Pendiente'), '#333')).join('');
+        document.getElementById('lista-directorio').innerHTML = dirHTML || '<li class="visit-empty">No hay clientes cargados.</li>';
+    }
+
+    function crearTarjetaCliente(cliente, metaTexto, metaColor) {
+        return `
+            <li class="visit-item">
+                <div class="header-item">
+                    <strong>${cliente.comercio || 'Sin Nombre'}</strong>
+                    <button class="btn-update" onclick="abrirModal(${cliente.row_index}, '${cliente.comercio}')">✏️ Actualizar</button>
+                </div>
+                <span>${cliente.zona_geografica} | ${cliente.rubro}</span>
+                <div class="visit-meta">
+                    <span>📞 ${cliente.telefono}</span>
+                    <span style="color:${metaColor}; font-weight:bold;">${metaTexto}</span>
+                </div>
+            </li>
+        `;
+    }
+
+    function filtrarDirectorio() {
+        const texto = document.getElementById('buscador').value.toLowerCase();
+        const filtrados = datosGlobales.filter(c => 
+            (c.comercio && c.comercio.toLowerCase().includes(texto)) || 
+            (c.rubro && c.rubro.toLowerCase().includes(texto))
+        );
+        renderizarDirectorio(filtrados);
+    }
+
+    function abrirModal(rowIndex, empresa) {
+        document.getElementById('update_row_index').value = rowIndex;
+        document.getElementById('modalEmpresaNombre').innerText = "Interacción: " + empresa;
+        document.getElementById('updateModal').style.display = "block";
+    }
+
+    function cerrarModal() { document.getElementById('updateModal').style.display = "none"; }
+
+    function enviarActualizacion() {
+        const form = document.getElementById('updateForm');
+        const btn = document.getElementById('btnActualizarModal');
+        if(!form.checkValidity()){ form.reportValidity(); return; }
+
+        btn.innerText = 'Guardando...'; btn.disabled = true;
+
+        fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: new URLSearchParams(new FormData(form)) })
+        .then(() => {
+            alert('¡Interacción guardada en historial!');
+            cerrarModal();
+            form.reset();
+            btn.innerText = 'Guardar Interacción'; btn.disabled = false;
+            traerDatosReales(); 
+        }).catch(() => {
+            alert('Error al actualizar.');
+            btn.innerText = 'Guardar Interacción'; btn.disabled = false;
+        });
     }
 </script>
 </body>
