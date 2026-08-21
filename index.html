@@ -111,11 +111,11 @@
             <ul class="visit-list" id="visitas-hoy"><li class="visit-empty">Cargando datos...</li></ul>
         </div>
         <div class="dash-card">
-            <h3>📞 Seguimientos Pendientes</h3>
+            <h3>📞 Seguimientos (Próximos 3 días)</h3>
             <ul class="visit-list" id="seguimientos-activos"><li class="visit-empty">Cargando datos...</li></ul>
         </div>
         <div class="dash-card" style="border-left-color: #ffc107;">
-            <h3 style="color: #333;">🗓️ Próximas Acciones (Futuro)</h3>
+            <h3 style="color: #333;">🗓️ Acciones Futuras (+3 días)</h3>
             <ul class="visit-list" id="acciones-futuras"><li class="visit-empty">Cargando datos...</li></ul>
         </div>
         <button id="btn-sync" class="btn-submit" style="background-color:#0056b3" onclick="traerDatosReales()">🔄 Sincronizar Agenda</button>
@@ -314,7 +314,7 @@
             let alerta = p.fecha_de_proximo_contacto < hoyStr ? ' ⚠️ (Atrasada)' : '';
             return crearTarjetaCliente(p, `📍 [${fLegible}] Acción: ` + p.detalle_proxima_accion + alerta, '#dc3545');
         }).join('');
-        document.getElementById('visitas-hoy').innerHTML = visitasAgenda.length ? visitasHTML : '<li class="visit-empty">No hay visitas pendientes.</li>';
+        document.getElementById('visitas-hoy').innerHTML = visitasAgenda.length ? visitasHTML : '<li class="visit-empty">No hay visitas pendientes en los próximos 3 días.</li>';
 
         // 2. SEGUIMIENTOS (Atrasados, Hoy y próximos 2 días que NO sean visitas)
         let seguimientos = activos.filter(f => 
@@ -328,7 +328,7 @@
             let alerta = f.fecha_de_proximo_contacto < hoyStr ? ' ⚠️ (Atrasado)' : '';
             return crearTarjetaCliente(f, `➡️ [${fLegible}] Acción: ` + f.detalle_proxima_accion + alerta, '#0056b3');
         }).join('');
-        document.getElementById('seguimientos-activos').innerHTML = seguimientos.length ? seguimientosHTML : '<li class="visit-empty">Al día.</li>';
+        document.getElementById('seguimientos-activos').innerHTML = seguimientos.length ? seguimientosHTML : '<li class="visit-empty">No hay seguimientos en los próximos 3 días.</li>';
 
         // 3. ACCIONES FUTURAS (Cualquier acción programada para más allá de 2 días)
         let accionesFuturas = activos.filter(f => f.fecha_de_proximo_contacto > limitesStr);
