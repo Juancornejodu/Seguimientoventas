@@ -107,7 +107,7 @@
     <!-- PESTAÑA 2: AGENDA -->
     <div id="tab-dash" class="tab-content">
         <div class="dash-card alert-red">
-            <h3>🚨 Visitas Programadas (Hoy)</h3>
+            <h3>🚨 Visitas (Próximos 3 días)</h3>
             <ul class="visit-list" id="visitas-hoy"><li class="visit-empty">Cargando datos...</li></ul>
         </div>
         <div class="dash-card">
@@ -213,7 +213,7 @@
 </div>
 
 <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxshI1ASf_VwxTqWWuOc5Jxs4Jhv1nfylpXX4dcHbX5FNh-eenf70rJixXyADxP7SyzSA/exec';
+    const SCRIPT_URL = 'PEGAR_ACA_TU_LINK_DE_APPS_SCRIPT'; // REEMPLAZA ESTO
     let datosGlobales = [];
     let chartInstance = null;
 
@@ -273,7 +273,7 @@
                     } 
                 });
             }).catch(e => {
-                alert('Error al leer datos.');
+                alert('Error al sincronizar. Revisá el SCRIPT_URL y los permisos.');
                 btnSyncs.forEach(btn => { 
                     if(btn) { 
                         btn.innerText = btn.id === 'btn-sync' ? '🔄 Sincronizar Agenda' : '🔄 Actualizar Gráficos'; 
@@ -284,20 +284,46 @@
     }
 
     function renderizarAgenda(datos) {
-        const hoyStr = new Date().toISOString().split('T')[0];
+        const hoy = new Date();
+        const hoyStr = hoy.toISOString().split('T')[0];
         
-        const visitasHoy = datos.filter(f => 
-            f.estado_en_pipeline === "Visita Programada" && 
-            f.fecha_de_proximo_contacto === hoyStr
-        );
-        const visitasHTML = visitasHoy.map(p => crearTarjetaCliente(p, '📍 ' + p.detalle_proxima_accion, '#dc3545')).join('');
-        document.getElementById('visitas-hoy').innerHTML = visitasHoy.length ? visitasHTML : '<li class="visit-empty">No hay visitas agendadas para hoy.</li>';
+        // Sumamos 2 días para el rango
+        const enDosDias = new Date();
+        enDosDias.setDate(hoy.getDate() + 2);
+        const limitesStr = enDosDias.toISOString().split('T')[0];
 
-        const seguimientos = datos.filter(f => 
-            (f.estado_en_pipeline === "Seguimiento" || f.estado_en_pipeline === "Propuesta Enviada") && 
-            f.fecha_de_proximo_contacto <= hoyStr
+        // --- FILTRO DE VISITAS ---
+        let visitasAgenda = datos.filter(f => 
+            f.estado_en_pipeline === "Visita Programada" && 
+            f.fecha_de_proximo_contacto >= hoyStr &&
+            f.fecha_de_proximo_contacto <= limitesStr
         );
-        const seguimientosHTML = seguimientos.map(f => crearTarjetaCliente(f, '➡️ Acción: ' + f.detalle_proxima_accion, '#0056b3')).join('');
+        
+        // Ordenamos las visitas de la más próxima a la más lejana
+        visitasAgenda.sort((a, b) => a.fecha_de_proximo_contacto.localeCompare(b.fecha_de_proximo_contacto));
+
+        const visitasHTML = visitasAgenda.map(p => {
+            let fechaArr = p.fecha_de_proximo_contacto.split('-');
+            let fechaLegible = `${fechaArr[2]}/${fechaArr[1]}`;
+            return crearTarjetaCliente(p, `📍 [${fechaLegible}] ` + p.detalle_proxima_accion, '#dc3545');
+        }).join('');
+        
+        document.getElementById('visitas-hoy').innerHTML = visitasAgenda.length ? visitasHTML : '<li class="visit-empty">No hay visitas agendadas para los próximos 3 días.</li>';
+
+        // --- FILTRO DE SEGUIMIENTOS ---
+        let seguimientos = datos.filter(f => 
+            (f.estado_en_pipeline === "Seguimiento" || f.estado_en_pipeline === "Propuesta Enviada") && 
+            f.fecha_de_proximo_contacto <= limitesStr
+        );
+        
+        seguimientos.sort((a, b) => a.fecha_de_proximo_contacto.localeCompare(b.fecha_de_proximo_contacto));
+
+        const seguimientosHTML = seguimientos.map(f => {
+            let fechaArr = f.fecha_de_proximo_contacto ? f.fecha_de_proximo_contacto.split('-') : ['','',''];
+            let fechaLegible = f.fecha_de_proximo_contacto ? `${fechaArr[2]}/${fechaArr[1]}` : 'Sin fecha';
+            return crearTarjetaCliente(f, `➡️ [${fechaLegible}] Acción: ` + f.detalle_proxima_accion, '#0056b3');
+        }).join('');
+        
         document.getElementById('seguimientos-activos').innerHTML = seguimientos.length ? seguimientosHTML : '<li class="visit-empty">Al día.</li>';
     }
 
@@ -369,7 +395,6 @@
     }
 
     function renderizarGraficos(datos) {
-        // --- CALCULO WIN RATE ---
         const ganados = datos.filter(d => d.estado_en_pipeline === "Ganado").length;
         const perdidos = datos.filter(d => d.estado_en_pipeline === "Perdido").length;
         const totalesCerrados = ganados + perdidos;
@@ -384,7 +409,6 @@
         document.getElementById('kpi-winrate').innerText = winRate + "%";
         document.getElementById('kpi-perdidos').innerText = lossRate + "%";
 
-        // --- CALCULO VISITAS SEMANALES ---
         const hoy = new Date();
         const diaSemana = hoy.getDay(); 
         const diffToMonday = hoy.getDate() - diaSemana + (diaSemana === 0 ? -6 : 1);
@@ -398,7 +422,6 @@
         
         document.getElementById('kpi-visitas').innerText = visitasEstaSemana + " / 15";
 
-        // --- GRAFICO PIPELINE ---
         const counts = {
             "Prospecto": 0,
             "Visita Programada": 0,
