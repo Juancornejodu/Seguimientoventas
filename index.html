@@ -119,12 +119,16 @@
     
     <!-- PESTAÑA 3: MÉTRICAS -->
     <div id="tab-metricas" class="tab-content">
-        <div style="display: flex; gap: 10px; margin-bottom:15px;">
-            <div class="dash-card" style="flex: 1; padding: 10px; margin-bottom: 0;">
+        <div style="display: flex; gap: 10px; margin-bottom:15px; flex-wrap: wrap;">
+            <div class="dash-card" style="flex: 1; min-width: 30%; padding: 10px; margin-bottom: 0;">
+                <h3 style="font-size:14px; margin-bottom:5px;">🏃 Visitas (Semana)</h3>
+                <div class="dash-number" id="kpi-visitas" style="font-size:20px; color:#0056b3;">0 / 15</div>
+            </div>
+            <div class="dash-card" style="flex: 1; min-width: 30%; padding: 10px; margin-bottom: 0;">
                 <h3 style="font-size:14px; margin-bottom:5px;">Win Rate</h3>
                 <div class="dash-number" id="kpi-winrate" style="font-size:20px; color:#28a745;">0%</div>
             </div>
-            <div class="dash-card" style="flex: 1; padding: 10px; margin-bottom: 0;">
+            <div class="dash-card" style="flex: 1; min-width: 30%; padding: 10px; margin-bottom: 0;">
                 <h3 style="font-size:14px; margin-bottom:5px;">Perdidos</h3>
                 <div class="dash-number" id="kpi-perdidos" style="font-size:20px; color:#dc3545;">0%</div>
             </div>
@@ -209,7 +213,7 @@
 </div>
 
 <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxDSbwGDrXWqt5nPW3kZIFXpwalkSPQAVQLLieYWgDWfa1bwWUaWSvyRyUJE3haELNoqA/exec';
+    const SCRIPT_URL = 'PEGAR_ACA_TU_LINK_DE_APPS_SCRIPT';
     let datosGlobales = [];
     let chartInstance = null;
 
@@ -365,6 +369,7 @@
     }
 
     function renderizarGraficos(datos) {
+        // --- CALCULO WIN RATE ---
         const ganados = datos.filter(d => d.estado_en_pipeline === "Ganado").length;
         const perdidos = datos.filter(d => d.estado_en_pipeline === "Perdido").length;
         const totalesCerrados = ganados + perdidos;
@@ -379,6 +384,21 @@
         document.getElementById('kpi-winrate').innerText = winRate + "%";
         document.getElementById('kpi-perdidos').innerText = lossRate + "%";
 
+        // --- CALCULO VISITAS SEMANALES ---
+        const hoy = new Date();
+        const diaSemana = hoy.getDay(); 
+        const diffToMonday = hoy.getDate() - diaSemana + (diaSemana === 0 ? -6 : 1);
+        const fechaLunes = new Date(hoy.setDate(diffToMonday));
+        fechaLunes.setHours(0,0,0,0);
+        
+        const visitasEstaSemana = datos.filter(f => {
+            const fechaVisita = new Date(f.timestamp);
+            return fechaVisita >= fechaLunes && (f.estado_en_pipeline === "Visita Programada" || f.accion === "Visita Presencial");
+        }).length;
+        
+        document.getElementById('kpi-visitas').innerText = visitasEstaSemana + " / 15";
+
+        // --- GRAFICO PIPELINE ---
         const counts = {
             "Prospecto": 0,
             "Visita Programada": 0,
