@@ -176,7 +176,6 @@
 </div>
 
 <script>
-    // ACA TENES QUE PEGAR EL LINK NUEVO QUE TE DE APPS SCRIPT
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzN0h2ibIJOKJT6P2ijlp3tq9EIxr61ywyqseNxg3yGcF8WhZr8hFYesvK63SPLqmKWDQ/exec';
 
     let datosGlobales = [];
@@ -217,7 +216,6 @@
     }
 
     function traerDatosReales() {
-        if(SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbzN0h2ibIJOKJT6P2ijlp3tq9EIxr61ywyqseNxg3yGcF8WhZr8hFYesvK63SPLqmKWDQ/exec') return alert('Falta link Apps Script');
         const btn = document.getElementById('btn-sync');
         if(btn) { btn.innerText = '⏳ Sincronizando...'; btn.disabled = true; }
 
