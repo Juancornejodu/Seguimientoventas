@@ -74,46 +74,56 @@
         </form>
     </div>
 
-    <!-- PESTAÑA: DASHBOARD -->
+    <!-- PESTAÑA: DASHBOARD OPERATIVO -->
     <div id="tab-dash" class="tab-content">
         
-        <!-- NUEVO: Visitas de Hoy -->
-        <div class="dash-card">
-            <h3>📅 Visitas de Hoy</h3>
-            <ul class="visit-list" id="visitas-hoy">
-                <li class="visit-empty">Haz clic en Actualizar para cargar la agenda</li>
+        <!-- Para la Cabeza Comercial: Lo que hay que armar HOY -->
+        <div class="dash-card alert-red">
+            <h3>🚨 Briefs Pendientes (SLA < 24h)</h3>
+            <ul class="visit-list" id="pendientes-propuesta">
+                <li class="visit-empty">Cargando datos...</li>
             </ul>
+            <p class="ayuda-texto">Leads calientes esperando PDF y Mockup.</p>
         </div>
 
-        <!-- NUEVO: Visitas de Mañana -->
+        <!-- Para la Cabeza Comercial / Vendedora: A quién contactar -->
         <div class="dash-card">
-            <h3>📆 Visitas de Mañana</h3>
-            <ul class="visit-list" id="visitas-manana">
-                <li class="visit-empty">Haz clic en Actualizar para cargar la agenda</li>
+            <h3>📞 Follow-Ups Programados</h3>
+            <ul class="visit-list" id="followups-hoy">
+                <li class="visit-empty">Cargando datos...</li>
             </ul>
+            <p class="ayuda-texto">Llamados a las 48hs o reuniones agendadas.</p>
         </div>
 
-        <div class="dash-card">
-            <h3>📈 Visitas de la Semana</h3>
-            <div class="dash-number">0 / 30</div>
-            <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">Meta: 30 visitas (Actividad)</p>
-        </div>
-        <div class="dash-card">
-            <h3>🔥 Leads Calientes (Interés Alto)</h3>
-            <div class="dash-number">0</div>
-            <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">Requieren envío de cotización / cierre</p>
+        <!-- Para la Dirección: Visión General -->
+        <div style="display: flex; gap: 10px;">
+            <div class="dash-card" style="flex: 1;">
+                <h3>🏃 Total Visitas</h3>
+                <div class="dash-number" id="kpi-visitas">0</div>
+            </div>
+            <div class="dash-card" style="flex: 1;">
+                <h3>🔥 Alta Intención</h3>
+                <div class="dash-number" id="kpi-calientes">0</div>
+            </div>
         </div>
 
-        <button class="btn-submit" style="background-color:#0056b3" onclick="simularTraerDatos()">🔄 Actualizar Dashboard</button>
+        <button id="btn-sync" class="btn-submit" style="background-color:#0056b3" onclick="traerDatosReales()">🔄 Sincronizar con Sheets</button>
     </div>
 </div>
 
 <script>
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzOpgu-CWOkH3rPSa6_I_Eq40CU43E3ASSB0W5XvY1fSqGTXawKovCCm3SAatk5giyKxA/exec';
+
     function switchTab(tabId) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.nav-tabs button').forEach(el => el.classList.remove('active'));
         document.getElementById('tab-' + tabId).classList.add('active');
         document.getElementById('btn-' + tabId).classList.add('active');
+        
+        // Auto-refresh al abrir el dashboard
+        if(tabId === 'dash') {
+            traerDatosReales();
+        }
     }
 
     function enviarDatos() {
@@ -138,9 +148,7 @@
             formData.set('soporte', opcionesSeleccionadas.join(' / '));
         }
 
-        const url = 'https://script.google.com/macros/s/AKfycbzOpgu-CWOkH3rPSa6_I_Eq40CU43E3ASSB0W5XvY1fSqGTXawKovCCm3SAatk5giyKxA/exec';
-
-        fetch(url, {
+        fetch(SCRIPT_URL, {
             method: 'POST',
             mode: 'no-cors',
             body: new URLSearchParams(formData)
@@ -156,39 +164,77 @@
         });
     }
 
-    // Esta función simula visualmente cómo se verían los datos cargados desde tu Sheets
-    function simularTraerDatos() {
-        // Datos de ejemplo para Hoy
-        document.getElementById('visitas-hoy').innerHTML = `
-            <li class="visit-item">
-                <strong>Corralón El Amigo</strong>
-                <span>Rubro: Construcción y Corralón</span>
-                <div class="visit-meta">
-                    <span>📍 Zona Sur</span>
-                    <span>📞 Contacto WhatsApp</span>
-                </div>
-            </li>
-            <li class="visit-item">
-                <strong>Farmacia San Francisco</strong>
-                <span>Rubro: Salud y Farmacia</span>
-                <div class="visit-meta">
-                    <span>📍 San Lorenzo Chico</span>
-                    <span>🤝 Visita Presencial</span>
-                </div>
-            </li>
-        `;
+    function traerDatosReales() {
+        const btn = document.getElementById('btn-sync');
+        if(btn) {
+            btn.innerText = '⏳ Sincronizando...';
+            btn.disabled = true;
+        }
 
-        // Datos de ejemplo para Mañana
-        document.getElementById('visitas-manana').innerHTML = `
+        fetch(SCRIPT_URL)
+            .then(response => {
+                if (!response.ok) throw new Error("Fallo la conexión GET");
+                return response.json();
+            })
+            .then(datos => {
+                renderizarDashboard(datos);
+                if(btn) {
+                    btn.innerText = '🔄 Sincronizar con Sheets';
+                    btn.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.warn('Apps Script GET no configurado. Mostrando datos mockeados.');
+                alert('Aún no configuramos la lectura en Apps Script. Mostrando datos de prueba.');
+                renderizarDashboardMock();
+                if(btn) {
+                    btn.innerText = '🔄 Sincronizar con Sheets';
+                    btn.disabled = false;
+                }
+            });
+    }
+
+    function renderizarDashboard(datos) {
+        // Filtrar pendientes (Interés Alto sin estado de envío - ajustá según las columnas de tu Sheets)
+        // Como tu form actual no tiene campo "estado", asumimos que todos los "Alto" recién cargados son urgentes
+        const pendientes = datos.filter(fila => fila.interes && fila.interes.includes("Alto"));
+        const pendientesHTML = pendientes.map(p => `
             <li class="visit-item">
-                <strong>Concesionaria Centro</strong>
-                <span>Rubro: Automotor</span>
+                <strong>${p.empresa || p["comercio_/_empresa"]}</strong>
+                <span>Rubro: ${p.rubro}</span>
                 <div class="visit-meta">
-                    <span>📍 Centro - Microcentro</span>
-                    <span>🤝 Reunión Agendada</span>
+                    <span>📍 ${p.zona}</span>
+                    <span style="color:#dc3545; font-weight:bold;">⏱️ Armar Propuesta</span>
                 </div>
             </li>
-        `;
+        `).join('');
+        document.getElementById('pendientes-propuesta').innerHTML = pendientes.length ? pendientesHTML : '<li class="visit-empty">No hay propuestas pendientes. ¡Excelente!</li>';
+
+        // Filtrar Follow-ups (Fechas de próximo contacto)
+        const hoy = new Date().toISOString().split('T')[0];
+        const followups = datos.filter(fila => fila.proximo_paso === hoy || fila["próximo_contacto"] === hoy);
+        const followupsHTML = followups.map(f => `
+            <li class="visit-item">
+                <strong>${f.empresa || f["comercio_/_empresa"]} - ${f.decisor}</strong>
+                <span>📞 ${f.telefono || f["whatsapp"]}</span>
+                <div class="visit-meta">
+                    <span>Acción: ${f.accion}</span>
+                </div>
+            </li>
+        `).join('');
+        document.getElementById('followups-hoy').innerHTML = followups.length ? followupsHTML : '<li class="visit-empty">No hay seguimientos agendados para hoy.</li>';
+
+        // KPIs
+        document.getElementById('kpi-visitas').innerText = datos.length;
+        document.getElementById('kpi-calientes').innerText = pendientes.length;
+    }
+
+    function renderizarDashboardMock() {
+        const mockDatos = [
+            { empresa: "Corralón El Amigo", rubro: "Construcción", zona: "Zona Sur", interes: "Alto", decisor: "Carlos", telefono: "3875123456", accion: "Visita Presencial" },
+            { empresa: "Farmacia San Francisco", rubro: "Salud", zona: "San Lorenzo Chico", interes: "Medio", decisor: "Ana", telefono: "3874112233", accion: "Contacto por WhatsApp" }
+        ];
+        renderizarDashboard(mockDatos);
     }
 </script>
 </body>
