@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>App Ventas - Dominio Visual</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 10px; }
         .container { max-width: 500px; margin: 0 auto; background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .nav-tabs { display: flex; margin-bottom: 20px; gap: 5px; }
-        .nav-tabs button { flex: 1; padding: 10px 5px; cursor: pointer; background: #eee; border: 1px solid #ccc; font-weight: bold; border-radius: 4px; font-size: 13px;}
+        .nav-tabs { display: flex; margin-bottom: 20px; gap: 5px; flex-wrap: wrap; }
+        .nav-tabs button { flex: 1; padding: 10px 5px; cursor: pointer; background: #eee; border: 1px solid #ccc; font-weight: bold; border-radius: 4px; font-size: 13px; min-width: 80px;}
         .nav-tabs button.active { background: #0056b3; color: white; border: none; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
@@ -38,6 +39,8 @@
         .modal-content { background-color: #fff; margin: 20% auto; padding: 20px; border-radius: 8px; width: 85%; max-width: 400px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
         .close-btn { color: #aaa; float: right; font-size: 24px; font-weight: bold; cursor: pointer; margin-top: -10px;}
         .close-btn:hover { color: #000; }
+
+        .chart-container { position: relative; height:200px; width:100%; margin-bottom: 20px;}
     </style>
 </head>
 <body>
@@ -45,7 +48,8 @@
 <div class="container">
     <div class="nav-tabs">
         <button id="btn-form" class="active" onclick="switchTab('form')">📝 Nuevo</button>
-        <button id="btn-dash" onclick="switchTab('dash')">📊 Panel</button>
+        <button id="btn-dash" onclick="switchTab('dash')">📋 Agenda</button>
+        <button id="btn-metricas" onclick="switchTab('metricas')">📊 Métricas</button>
         <button id="btn-directorio" onclick="switchTab('directorio')">📇 Directorio</button>
     </div>
 
@@ -54,7 +58,7 @@
         <form id="crmForm">
             <div class="form-group"><label>Comercio / Empresa *</label><input type="text" name="empresa" required></div>
             <div class="form-group"><label>Zona / Corredor *</label><select name="zona" required><option value="Centro - Peatonales">Centro - Peatonales</option><option value="Centro - Microcentro">Centro - Microcentro</option><option value="San Lorenzo Chico">San Lorenzo Chico</option><option value="Zona Norte">Zona Norte</option><option value="Zona Sur">Zona Sur</option></select></div>
-            <div class="form-group"><label>Rubro *</label><select name="rubro" required><option value="Construcción y Corralón">Construcción y Corralón</option><option value="Gastronomía">Gastronomía</option><option value="Indumentaria y Retail">Indumentaria y Retail</option><option value="Salud y Farmacia">Salud y Farmacia</option><option value="Automotor">Automotor</option><option value="Otro">Otro</option></select></div>
+            <div class="form-group"><label>Rubro *</label><select name="rubro" required><option value="Automotor">Automotor</option><option value="Construcción y Corralón">Construcción y Corralón</option><option value="Gastronomía">Gastronomía</option><option value="Indumentaria y Retail">Indumentaria y Retail</option><option value="Salud y Farmacia">Salud y Farmacia</option><option value="Otro">Otro</option></select></div>
             <div class="form-group"><label>Contacto (Decisor) *</label><input type="text" name="decisor" required></div>
             <div class="form-group"><label>WhatsApp *</label><input type="tel" name="telefono" required></div>
             
@@ -68,22 +72,29 @@
                     <option value="Galería Margalef">Galería Margalef</option>
                     <option value="Galería Buenos Aires">Galería Buenos Aires</option>
                     <option value="UCASAL">UCASAL</option>
+                    <option value="Acceso Norte">Acceso Norte</option>
                     <option value="Wa">Wa (En negociación)</option>
                 </select>
             </div>
 
-            <div class="form-group"><label>Acción Ejecutada *</label><select name="accion" required><option value="Visita Presencial">Visita Presencial</option><option value="Contacto por WhatsApp">Contacto por WhatsApp</option><option value="Reunión Agendada">Reunión Agendada</option></select></div>
-            <div class="form-group"><label>Interés *</label><select name="interes" required><option value="Alto">🔥 Alto (Cotización)</option><option value="Medio">🟡 Medio (Info General)</option><option value="Bajo">🧊 Bajo (Sin ppto)</option><option value="Nulo">❌ Nulo</option></select></div>
+            <div class="form-group"><label>Estado Inicial *</label>
+                <select name="estado_pipeline" required>
+                    <option value="Prospecto">Prospecto (Sin contactar)</option>
+                    <option value="Visita Programada">Visita Programada</option>
+                </select>
+            </div>
+            
+            <div class="form-group"><label>Acción Ejecutada *</label><select name="accion" required><option value="Carga en Base">Carga en Base</option><option value="Visita Presencial">Visita Presencial</option><option value="Contacto por WhatsApp">Contacto por WhatsApp</option><option value="Reunión Agendada">Reunión Agendada</option></select></div>
+            <div class="form-group"><label>Interés *</label><select name="interes" required><option value="Sin Definir">⚪ Sin Definir</option><option value="Alto">🔥 Alto (Cotización)</option><option value="Medio">🟡 Medio (Info General)</option><option value="Bajo">🧊 Bajo (Sin ppto)</option><option value="Nulo">❌ Nulo</option></select></div>
             <div class="form-group"><label>Fecha de Próximo Contacto *</label><input type="date" name="proximo_paso" required></div>
             
             <div class="form-group">
                 <label>Detalle Próxima Acción *</label>
                 <select name="detalle_proxima_accion" required>
+                    <option value="Visitar presencialmente">Visitar presencialmente</option>
                     <option value="Enviar Propuesta">Enviar Propuesta</option>
-                    <option value="Nueva Visita presencial">Nueva Visita presencial</option>
                     <option value="Llamada">Llamada</option>
                     <option value="Mensaje de WhatsApp">Mensaje de WhatsApp</option>
-                    <option value="Cierre / Envío Kit Técnico">Cierre / Envío Kit Técnico</option>
                     <option value="Ninguna">Ninguna</option>
                 </select>
             </div>
@@ -93,38 +104,49 @@
         </form>
     </div>
 
-    <!-- PESTAÑA 2: DASHBOARD -->
+    <!-- PESTAÑA 2: AGENDA -->
     <div id="tab-dash" class="tab-content">
         <div class="dash-card alert-red">
-            <h3>🚨 Briefs Pendientes</h3>
-            <ul class="visit-list" id="pendientes-propuesta"><li class="visit-empty">Cargando datos...</li></ul>
+            <h3>🚨 Visitas Programadas (Hoy)</h3>
+            <ul class="visit-list" id="visitas-hoy"><li class="visit-empty">Cargando datos...</li></ul>
         </div>
         <div class="dash-card">
-            <h3>📞 Follow-Ups Programados</h3>
-            <ul class="visit-list" id="followups-hoy"><li class="visit-empty">Cargando datos...</li></ul>
+            <h3>📞 Seguimientos Pendientes</h3>
+            <ul class="visit-list" id="seguimientos-activos"><li class="visit-empty">Cargando datos...</li></ul>
         </div>
-        <div style="display: flex; gap: 10px;">
-            <div class="dash-card" style="flex: 1;">
-                <h3>🏃 Visitas (Semana)</h3>
-                <div class="dash-number" id="kpi-visitas">0 / 15</div>
-                <p class="ayuda-texto">Lunes a Viernes</p>
+        <button id="btn-sync" class="btn-submit" style="background-color:#0056b3" onclick="traerDatosReales()">🔄 Sincronizar Agenda</button>
+    </div>
+    
+    <!-- PESTAÑA 3: MÉTRICAS -->
+    <div id="tab-metricas" class="tab-content">
+        <div style="display: flex; gap: 10px; margin-bottom:15px;">
+            <div class="dash-card" style="flex: 1; padding: 10px; margin-bottom: 0;">
+                <h3 style="font-size:14px; margin-bottom:5px;">Win Rate</h3>
+                <div class="dash-number" id="kpi-winrate" style="font-size:20px; color:#28a745;">0%</div>
             </div>
-            <div class="dash-card" style="flex: 1;">
-                <h3>🔥 Calientes</h3>
-                <div class="dash-number" id="kpi-calientes">0</div>
+            <div class="dash-card" style="flex: 1; padding: 10px; margin-bottom: 0;">
+                <h3 style="font-size:14px; margin-bottom:5px;">Perdidos</h3>
+                <div class="dash-number" id="kpi-perdidos" style="font-size:20px; color:#dc3545;">0%</div>
             </div>
         </div>
-        <button id="btn-sync" class="btn-submit" style="background-color:#0056b3" onclick="traerDatosReales()">🔄 Sincronizar</button>
+        
+        <div class="dash-card">
+            <h3>Embudo de Ventas Activo</h3>
+            <div class="chart-container">
+                <canvas id="pipelineChart"></canvas>
+            </div>
+        </div>
+        <button class="btn-submit" style="background-color:#0056b3; margin-top:10px;" onclick="traerDatosReales()">🔄 Actualizar Gráficos</button>
     </div>
 
-    <!-- PESTAÑA 3: DIRECTORIO -->
+    <!-- PESTAÑA 4: DIRECTORIO -->
     <div id="tab-directorio" class="tab-content">
         <div class="dash-card">
             <h3>📇 Todos los Clientes</h3>
             <p class="ayuda-texto" style="margin-bottom:10px;">Buscá un cliente para agregar info o registrar una nueva acción en su historial.</p>
             <input type="text" id="buscador" placeholder="Buscar por nombre o rubro..." onkeyup="filtrarDirectorio()" style="margin-bottom: 15px;">
             <ul class="visit-list" id="lista-directorio">
-                <li class="visit-empty">Sincronizá el panel para ver los clientes.</li>
+                <li class="visit-empty">Sincronizá para ver los clientes.</li>
             </ul>
         </div>
     </div>
@@ -144,13 +166,24 @@
             <div class="form-group">
                 <label>Nuevo Estado</label>
                 <select name="estado_pipeline" required>
-                    <option value="Pendiente">Pendiente</option>
+                    <option value="Visita Programada">Visita Programada</option>
+                    <option value="Seguimiento">Seguimiento / En Negociación</option>
                     <option value="Propuesta Enviada">Propuesta Enviada</option>
-                    <option value="En Negociación">En Negociación</option>
-                    <option value="Cerrado Ganado">Cerrado Ganado 🏆</option>
-                    <option value="Perdido">Perdido ❌</option>
+                    <option value="Ganado">Cerrado - Ganado 🏆</option>
+                    <option value="Perdido">Cerrado - Perdido ❌</option>
                 </select>
             </div>
+            
+            <div class="form-group">
+                <label>Resultado de la Visita/Contacto</label>
+                <select name="interes" required>
+                    <option value="Alto">🔥 Alto (Cotización)</option>
+                    <option value="Medio">🟡 Medio (Info General)</option>
+                    <option value="Bajo">🧊 Bajo (Sin ppto)</option>
+                    <option value="Nulo">❌ Nulo</option>
+                </select>
+            </div>
+
             <div class="form-group">
                 <label>Próxima Acción a realizar</label>
                 <select name="detalle_proxima_accion" required>
@@ -176,9 +209,9 @@
 </div>
 
 <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzN0h2ibIJOKJT6P2ijlp3tq9EIxr61ywyqseNxg3yGcF8WhZr8hFYesvK63SPLqmKWDQ/exec';
-
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxDSbwGDrXWqt5nPW3kZIFXpwalkSPQAVQLLieYWgDWfa1bwWUaWSvyRyUJE3haELNoqA/exec';
     let datosGlobales = [];
+    let chartInstance = null;
 
     function switchTab(tabId) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -186,8 +219,11 @@
         document.getElementById('tab-' + tabId).classList.add('active');
         document.getElementById('btn-' + tabId).classList.add('active');
         
-        if(tabId === 'dash' || tabId === 'directorio') {
+        if(tabId === 'dash' || tabId === 'directorio' || tabId === 'metricas') {
             if (datosGlobales.length === 0) traerDatosReales();
+            else {
+                if(tabId === 'metricas') renderizarGraficos(datosGlobales);
+            }
         }
     }
 
@@ -216,46 +252,49 @@
     }
 
     function traerDatosReales() {
-        const btn = document.getElementById('btn-sync');
-        if(btn) { btn.innerText = '⏳ Sincronizando...'; btn.disabled = true; }
+        const btnSyncs = document.querySelectorAll('#btn-sync, #tab-metricas .btn-submit');
+        btnSyncs.forEach(btn => { if(btn) { btn.innerText = '⏳ Cargando...'; btn.disabled = true; } });
 
         fetch(SCRIPT_URL)
             .then(r => r.json())
             .then(datos => {
                 datosGlobales = datos.reverse();
-                renderizarDashboard(datosGlobales);
+                renderizarAgenda(datosGlobales);
                 renderizarDirectorio(datosGlobales);
-                if(btn) { btn.innerText = '🔄 Sincronizar'; btn.disabled = false; }
+                renderizarGraficos(datosGlobales);
+                btnSyncs.forEach(btn => { 
+                    if(btn) { 
+                        btn.innerText = btn.id === 'btn-sync' ? '🔄 Sincronizar Agenda' : '🔄 Actualizar Gráficos'; 
+                        btn.disabled = false; 
+                    } 
+                });
             }).catch(e => {
                 alert('Error al leer datos.');
-                if(btn) { btn.innerText = '🔄 Sincronizar'; btn.disabled = false; }
+                btnSyncs.forEach(btn => { 
+                    if(btn) { 
+                        btn.innerText = btn.id === 'btn-sync' ? '🔄 Sincronizar Agenda' : '🔄 Actualizar Gráficos'; 
+                        btn.disabled = false; 
+                    } 
+                });
             });
     }
 
-    function renderizarDashboard(datos) {
-        const pendientes = datos.filter(f => f.interes && f.interes.includes("Alto") && (!f.estado_en_pipeline || f.estado_en_pipeline === "Pendiente"));
-        const pendientesHTML = pendientes.map(p => crearTarjetaCliente(p, '⏱️ Armar Propuesta', '#dc3545')).join('');
-        document.getElementById('pendientes-propuesta').innerHTML = pendientes.length ? pendientesHTML : '<li class="visit-empty">No hay urgencias.</li>';
-
+    function renderizarAgenda(datos) {
         const hoyStr = new Date().toISOString().split('T')[0];
-        const followups = datos.filter(f => f.fecha_de_proximo_contacto === hoyStr && f.estado_en_pipeline !== "Cerrado Ganado" && f.estado_en_pipeline !== "Perdido");
-        const followupsHTML = followups.map(f => crearTarjetaCliente(f, '➡️ Hacer: ' + f.detalle_proxima_accion, '#0056b3')).join('');
-        document.getElementById('followups-hoy').innerHTML = followups.length ? followupsHTML : '<li class="visit-empty">Nada para hoy.</li>';
+        
+        const visitasHoy = datos.filter(f => 
+            f.estado_en_pipeline === "Visita Programada" && 
+            f.fecha_de_proximo_contacto === hoyStr
+        );
+        const visitasHTML = visitasHoy.map(p => crearTarjetaCliente(p, '📍 ' + p.detalle_proxima_accion, '#dc3545')).join('');
+        document.getElementById('visitas-hoy').innerHTML = visitasHoy.length ? visitasHTML : '<li class="visit-empty">No hay visitas agendadas para hoy.</li>';
 
-        // LÓGICA KPI LUNES A VIERNES
-        const hoy = new Date();
-        const diaSemana = hoy.getDay(); 
-        const diffToMonday = hoy.getDate() - diaSemana + (diaSemana === 0 ? -6 : 1);
-        const fechaLunes = new Date(hoy.setDate(diffToMonday));
-        fechaLunes.setHours(0,0,0,0);
-        
-        const visitasEstaSemana = datos.filter(f => {
-            const fechaVisita = new Date(f.timestamp);
-            return fechaVisita >= fechaLunes;
-        }).length;
-        
-        document.getElementById('kpi-visitas').innerText = visitasEstaSemana + " / 15";
-        document.getElementById('kpi-calientes').innerText = pendientes.length;
+        const seguimientos = datos.filter(f => 
+            (f.estado_en_pipeline === "Seguimiento" || f.estado_en_pipeline === "Propuesta Enviada") && 
+            f.fecha_de_proximo_contacto <= hoyStr
+        );
+        const seguimientosHTML = seguimientos.map(f => crearTarjetaCliente(f, '➡️ Acción: ' + f.detalle_proxima_accion, '#0056b3')).join('');
+        document.getElementById('seguimientos-activos').innerHTML = seguimientos.length ? seguimientosHTML : '<li class="visit-empty">Al día.</li>';
     }
 
     function renderizarDirectorio(datos) {
@@ -264,11 +303,15 @@
     }
 
     function crearTarjetaCliente(cliente, metaTexto, metaColor) {
+        let emoji = "";
+        if(cliente.estado_en_pipeline === "Ganado") emoji = "🏆 ";
+        if(cliente.estado_en_pipeline === "Perdido") emoji = "❌ ";
+        
         return `
             <li class="visit-item">
                 <div class="header-item">
-                    <strong>${cliente.comercio || 'Sin Nombre'}</strong>
-                    <button class="btn-update" onclick="abrirModal(${cliente.row_index}, '${cliente.comercio}')">✏️ Actualizar</button>
+                    <strong>${emoji}${cliente.comercio || 'Sin Nombre'}</strong>
+                    <button class="btn-update" onclick="abrirModal(${cliente.row_index}, '${cliente.comercio}', '${cliente.estado_en_pipeline}', '${cliente.interes}')">✏️ Actualizar</button>
                 </div>
                 <span>${cliente.zona_geografica} | ${cliente.rubro}</span>
                 <div class="visit-meta">
@@ -288,9 +331,14 @@
         renderizarDirectorio(filtrados);
     }
 
-    function abrirModal(rowIndex, empresa) {
+    function abrirModal(rowIndex, empresa, estadoActual, interesActual) {
         document.getElementById('update_row_index').value = rowIndex;
         document.getElementById('modalEmpresaNombre').innerText = "Interacción: " + empresa;
+        
+        const form = document.getElementById('updateForm');
+        if(estadoActual) form.estado_pipeline.value = estadoActual;
+        if(interesActual) form.interes.value = interesActual;
+
         document.getElementById('updateModal').style.display = "block";
     }
 
@@ -313,6 +361,66 @@
         }).catch(() => {
             alert('Error al actualizar.');
             btn.innerText = 'Guardar Interacción'; btn.disabled = false;
+        });
+    }
+
+    function renderizarGraficos(datos) {
+        const ganados = datos.filter(d => d.estado_en_pipeline === "Ganado").length;
+        const perdidos = datos.filter(d => d.estado_en_pipeline === "Perdido").length;
+        const totalesCerrados = ganados + perdidos;
+        
+        let winRate = 0;
+        let lossRate = 0;
+        if (totalesCerrados > 0) {
+            winRate = Math.round((ganados / totalesCerrados) * 100);
+            lossRate = Math.round((perdidos / totalesCerrados) * 100);
+        }
+        
+        document.getElementById('kpi-winrate').innerText = winRate + "%";
+        document.getElementById('kpi-perdidos').innerText = lossRate + "%";
+
+        const counts = {
+            "Prospecto": 0,
+            "Visita Programada": 0,
+            "Seguimiento": 0,
+            "Propuesta Enviada": 0
+        };
+
+        datos.forEach(d => {
+            if (counts.hasOwnProperty(d.estado_en_pipeline)) {
+                counts[d.estado_en_pipeline]++;
+            } else if (d.estado_en_pipeline === "En Negociación" || d.estado_en_pipeline === "Pendiente") {
+                 counts["Seguimiento"]++;
+            }
+        });
+
+        const ctx = document.getElementById('pipelineChart').getContext('2d');
+        
+        if(chartInstance) {
+            chartInstance.destroy();
+        }
+
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Prospecto', 'Visitas', 'Seguimiento', 'Propuestas'],
+                datasets: [{
+                    label: 'Cantidad',
+                    data: [counts["Prospecto"], counts["Visita Programada"], counts["Seguimiento"], counts["Propuesta Enviada"]],
+                    backgroundColor: ['#6c757d', '#ffc107', '#17a2b8', '#007bff'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
         });
     }
 </script>
