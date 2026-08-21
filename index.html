@@ -114,6 +114,12 @@
             <h3>📞 Seguimientos Pendientes</h3>
             <ul class="visit-list" id="seguimientos-activos"><li class="visit-empty">Cargando datos...</li></ul>
         </div>
+        <!-- NUEVA SECCIÓN DE ACCIONES FUTURAS -->
+        <div class="dash-card" style="border-left-color: #ffc107;">
+            <h3 style="color: #333;">🗓️ Próximas Acciones (Futuro)</h3>
+            <ul class="visit-list" id="acciones-futuras"><li class="visit-empty">Cargando datos...</li></ul>
+        </div>
+        
         <button id="btn-sync" class="btn-submit" style="background-color:#0056b3" onclick="traerDatosReales()">🔄 Sincronizar Agenda</button>
     </div>
     
@@ -213,7 +219,7 @@
 </div>
 
 <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxshI1ASf_VwxTqWWuOc5Jxs4Jhv1nfylpXX4dcHbX5FNh-eenf70rJixXyADxP7SyzSA/exec';
+    const SCRIPT_URL = 'PEGAR_ACA_TU_LINK_DE_APPS_SCRIPT'; // REEMPLAZÁ ACÁ TU LINK NUEVO
     let datosGlobales = [];
     let chartInstance = null;
 
@@ -287,44 +293,51 @@
         const hoy = new Date();
         const hoyStr = hoy.toISOString().split('T')[0];
         
-        // Sumamos 2 días para el rango
+        // Sumamos 2 días para el rango corto
         const enDosDias = new Date();
         enDosDias.setDate(hoy.getDate() + 2);
         const limitesStr = enDosDias.toISOString().split('T')[0];
 
-        // --- FILTRO DE VISITAS ---
+        // --- FILTRO DE VISITAS (Hoy + 2 días) ---
         let visitasAgenda = datos.filter(f => 
             f.estado_en_pipeline === "Visita Programada" && 
             f.fecha_de_proximo_contacto >= hoyStr &&
             f.fecha_de_proximo_contacto <= limitesStr
         );
-        
-        // Ordenamos las visitas de la más próxima a la más lejana
         visitasAgenda.sort((a, b) => a.fecha_de_proximo_contacto.localeCompare(b.fecha_de_proximo_contacto));
-
         const visitasHTML = visitasAgenda.map(p => {
             let fechaArr = p.fecha_de_proximo_contacto.split('-');
             let fechaLegible = `${fechaArr[2]}/${fechaArr[1]}`;
-            return crearTarjetaCliente(p, `📍 [${fechaLegible}] ` + p.detalle_proxima_accion, '#dc3545');
+            return crearTarjetaCliente(p, `📍 [${fechaLegible}] Acción a ejecutar: ` + p.detalle_proxima_accion, '#dc3545');
         }).join('');
-        
         document.getElementById('visitas-hoy').innerHTML = visitasAgenda.length ? visitasHTML : '<li class="visit-empty">No hay visitas agendadas para los próximos 3 días.</li>';
 
-        // --- FILTRO DE SEGUIMIENTOS ---
+        // --- FILTRO DE SEGUIMIENTOS (Atrasados o hasta en 2 días) ---
         let seguimientos = datos.filter(f => 
             (f.estado_en_pipeline === "Seguimiento" || f.estado_en_pipeline === "Propuesta Enviada") && 
-            f.fecha_de_proximo_contacto <= limitesStr
+            f.fecha_de_proximo_contacto && f.fecha_de_proximo_contacto <= limitesStr
         );
-        
         seguimientos.sort((a, b) => a.fecha_de_proximo_contacto.localeCompare(b.fecha_de_proximo_contacto));
-
         const seguimientosHTML = seguimientos.map(f => {
-            let fechaArr = f.fecha_de_proximo_contacto ? f.fecha_de_proximo_contacto.split('-') : ['','',''];
-            let fechaLegible = f.fecha_de_proximo_contacto ? `${fechaArr[2]}/${fechaArr[1]}` : 'Sin fecha';
-            return crearTarjetaCliente(f, `➡️ [${fechaLegible}] Acción: ` + f.detalle_proxima_accion, '#0056b3');
+            let fechaArr = f.fecha_de_proximo_contacto.split('-');
+            let fechaLegible = `${fechaArr[2]}/${fechaArr[1]}`;
+            return crearTarjetaCliente(f, `➡️ [${fechaLegible}] Acción a ejecutar: ` + f.detalle_proxima_accion, '#0056b3');
         }).join('');
-        
         document.getElementById('seguimientos-activos').innerHTML = seguimientos.length ? seguimientosHTML : '<li class="visit-empty">Al día.</li>';
+
+        // --- FILTRO DE ACCIONES FUTURAS (Más allá de los próximos 3 días) ---
+        let accionesFuturas = datos.filter(f => 
+            f.estado_en_pipeline !== "Ganado" && f.estado_en_pipeline !== "Perdido" &&
+            f.fecha_de_proximo_contacto > limitesStr &&
+            f.detalle_proxima_accion !== "Ninguna" && f.detalle_proxima_accion !== ""
+        );
+        accionesFuturas.sort((a, b) => a.fecha_de_proximo_contacto.localeCompare(b.fecha_de_proximo_contacto));
+        const futurasHTML = accionesFuturas.map(f => {
+            let fechaArr = f.fecha_de_proximo_contacto.split('-');
+            let fechaLegible = `${fechaArr[2]}/${fechaArr[1]}`;
+            return crearTarjetaCliente(f, `🗓️ [${fechaLegible}] Acción a ejecutar: ` + f.detalle_proxima_accion, '#d39e00');
+        }).join('');
+        document.getElementById('acciones-futuras').innerHTML = accionesFuturas.length ? futurasHTML : '<li class="visit-empty">No hay acciones programadas a futuro.</li>';
     }
 
     function renderizarDirectorio(datos) {
