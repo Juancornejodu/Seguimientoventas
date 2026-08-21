@@ -114,12 +114,10 @@
             <h3>📞 Seguimientos Pendientes</h3>
             <ul class="visit-list" id="seguimientos-activos"><li class="visit-empty">Cargando datos...</li></ul>
         </div>
-        <!-- NUEVA SECCIÓN DE ACCIONES FUTURAS -->
         <div class="dash-card" style="border-left-color: #ffc107;">
             <h3 style="color: #333;">🗓️ Próximas Acciones (Futuro)</h3>
             <ul class="visit-list" id="acciones-futuras"><li class="visit-empty">Cargando datos...</li></ul>
         </div>
-        
         <button id="btn-sync" class="btn-submit" style="background-color:#0056b3" onclick="traerDatosReales()">🔄 Sincronizar Agenda</button>
     </div>
     
@@ -219,7 +217,7 @@
 </div>
 
 <script>
-    const SCRIPT_URL = 'PEGAR_ACA_TU_LINK_DE_APPS_SCRIPT'; // REEMPLAZÁ ACÁ TU LINK NUEVO
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxshI1ASf_VwxTqWWuOc5Jxs4Jhv1nfylpXX4dcHbX5FNh-eenf70rJixXyADxP7SyzSA/exec'; // ASEGURATE DE QUE ESTE SEA EL CORRECTO
     let datosGlobales = [];
     let chartInstance = null;
 
@@ -291,51 +289,54 @@
 
     function renderizarAgenda(datos) {
         const hoy = new Date();
-        const hoyStr = hoy.toISOString().split('T')[0];
+        const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
         
-        // Sumamos 2 días para el rango corto
         const enDosDias = new Date();
         enDosDias.setDate(hoy.getDate() + 2);
-        const limitesStr = enDosDias.toISOString().split('T')[0];
+        const limitesStr = `${enDosDias.getFullYear()}-${String(enDosDias.getMonth() + 1).padStart(2, '0')}-${String(enDosDias.getDate()).padStart(2, '0')}`;
 
-        // --- FILTRO DE VISITAS (Hoy + 2 días) ---
-        let visitasAgenda = datos.filter(f => 
-            f.estado_en_pipeline === "Visita Programada" && 
-            f.fecha_de_proximo_contacto >= hoyStr &&
+        // Filtro maestro: Solo los que no estén Ganados/Perdidos y tengan fecha asignada
+        let activos = datos.filter(f => 
+            f.estado_en_pipeline !== "Ganado" && 
+            f.estado_en_pipeline !== "Perdido" && 
+            f.fecha_de_proximo_contacto
+        );
+
+        // 1. VISITAS (Atrasadas, Hoy y próximos 2 días)
+        let visitasAgenda = activos.filter(f => 
+            (f.estado_en_pipeline === "Visita Programada" || (f.detalle_proxima_accion && f.detalle_proxima_accion.includes("Visita"))) &&
             f.fecha_de_proximo_contacto <= limitesStr
         );
         visitasAgenda.sort((a, b) => a.fecha_de_proximo_contacto.localeCompare(b.fecha_de_proximo_contacto));
         const visitasHTML = visitasAgenda.map(p => {
-            let fechaArr = p.fecha_de_proximo_contacto.split('-');
-            let fechaLegible = `${fechaArr[2]}/${fechaArr[1]}`;
-            return crearTarjetaCliente(p, `📍 [${fechaLegible}] Acción a ejecutar: ` + p.detalle_proxima_accion, '#dc3545');
+            let f = p.fecha_de_proximo_contacto.split('-');
+            let fLegible = f.length === 3 ? `${f[2]}/${f[1]}` : p.fecha_de_proximo_contacto;
+            let alerta = p.fecha_de_proximo_contacto < hoyStr ? ' ⚠️ (Atrasada)' : '';
+            return crearTarjetaCliente(p, `📍 [${fLegible}] Acción: ` + p.detalle_proxima_accion + alerta, '#dc3545');
         }).join('');
-        document.getElementById('visitas-hoy').innerHTML = visitasAgenda.length ? visitasHTML : '<li class="visit-empty">No hay visitas agendadas para los próximos 3 días.</li>';
+        document.getElementById('visitas-hoy').innerHTML = visitasAgenda.length ? visitasHTML : '<li class="visit-empty">No hay visitas pendientes.</li>';
 
-        // --- FILTRO DE SEGUIMIENTOS (Atrasados o hasta en 2 días) ---
-        let seguimientos = datos.filter(f => 
-            (f.estado_en_pipeline === "Seguimiento" || f.estado_en_pipeline === "Propuesta Enviada") && 
-            f.fecha_de_proximo_contacto && f.fecha_de_proximo_contacto <= limitesStr
+        // 2. SEGUIMIENTOS (Atrasados, Hoy y próximos 2 días que NO sean visitas)
+        let seguimientos = activos.filter(f => 
+            !(f.estado_en_pipeline === "Visita Programada" || (f.detalle_proxima_accion && f.detalle_proxima_accion.includes("Visita"))) &&
+            f.fecha_de_proximo_contacto <= limitesStr
         );
         seguimientos.sort((a, b) => a.fecha_de_proximo_contacto.localeCompare(b.fecha_de_proximo_contacto));
         const seguimientosHTML = seguimientos.map(f => {
-            let fechaArr = f.fecha_de_proximo_contacto.split('-');
-            let fechaLegible = `${fechaArr[2]}/${fechaArr[1]}`;
-            return crearTarjetaCliente(f, `➡️ [${fechaLegible}] Acción a ejecutar: ` + f.detalle_proxima_accion, '#0056b3');
+            let fc = f.fecha_de_proximo_contacto.split('-');
+            let fLegible = fc.length === 3 ? `${fc[2]}/${fc[1]}` : f.fecha_de_proximo_contacto;
+            let alerta = f.fecha_de_proximo_contacto < hoyStr ? ' ⚠️ (Atrasado)' : '';
+            return crearTarjetaCliente(f, `➡️ [${fLegible}] Acción: ` + f.detalle_proxima_accion + alerta, '#0056b3');
         }).join('');
         document.getElementById('seguimientos-activos').innerHTML = seguimientos.length ? seguimientosHTML : '<li class="visit-empty">Al día.</li>';
 
-        // --- FILTRO DE ACCIONES FUTURAS (Más allá de los próximos 3 días) ---
-        let accionesFuturas = datos.filter(f => 
-            f.estado_en_pipeline !== "Ganado" && f.estado_en_pipeline !== "Perdido" &&
-            f.fecha_de_proximo_contacto > limitesStr &&
-            f.detalle_proxima_accion !== "Ninguna" && f.detalle_proxima_accion !== ""
-        );
+        // 3. ACCIONES FUTURAS (Cualquier acción programada para más allá de 2 días)
+        let accionesFuturas = activos.filter(f => f.fecha_de_proximo_contacto > limitesStr);
         accionesFuturas.sort((a, b) => a.fecha_de_proximo_contacto.localeCompare(b.fecha_de_proximo_contacto));
         const futurasHTML = accionesFuturas.map(f => {
-            let fechaArr = f.fecha_de_proximo_contacto.split('-');
-            let fechaLegible = `${fechaArr[2]}/${fechaArr[1]}`;
-            return crearTarjetaCliente(f, `🗓️ [${fechaLegible}] Acción a ejecutar: ` + f.detalle_proxima_accion, '#d39e00');
+            let fc = f.fecha_de_proximo_contacto.split('-');
+            let fLegible = fc.length === 3 ? `${fc[2]}/${fc[1]}` : f.fecha_de_proximo_contacto;
+            return crearTarjetaCliente(f, `🗓️ [${fLegible}] Acción: ` + f.detalle_proxima_accion, '#d39e00');
         }).join('');
         document.getElementById('acciones-futuras').innerHTML = accionesFuturas.length ? futurasHTML : '<li class="visit-empty">No hay acciones programadas a futuro.</li>';
     }
