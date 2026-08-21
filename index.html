@@ -77,7 +77,6 @@
     <!-- PESTAÑA: DASHBOARD OPERATIVO -->
     <div id="tab-dash" class="tab-content">
         
-        <!-- Para la Cabeza Comercial: Lo que hay que armar HOY -->
         <div class="dash-card alert-red">
             <h3>🚨 Briefs Pendientes (SLA < 24h)</h3>
             <ul class="visit-list" id="pendientes-propuesta">
@@ -86,7 +85,6 @@
             <p class="ayuda-texto">Leads calientes esperando PDF y Mockup.</p>
         </div>
 
-        <!-- Para la Cabeza Comercial / Vendedora: A quién contactar -->
         <div class="dash-card">
             <h3>📞 Follow-Ups Programados</h3>
             <ul class="visit-list" id="followups-hoy">
@@ -95,7 +93,6 @@
             <p class="ayuda-texto">Llamados a las 48hs o reuniones agendadas.</p>
         </div>
 
-        <!-- Para la Dirección: Visión General -->
         <div style="display: flex; gap: 10px;">
             <div class="dash-card" style="flex: 1;">
                 <h3>🏃 Total Visitas</h3>
@@ -112,7 +109,8 @@
 </div>
 
 <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzOpgu-CWOkH3rPSa6_I_Eq40CU43E3ASSB0W5XvY1fSqGTXawKovCCm3SAatk5giyKxA/exec';
+    // ACA TENES QUE PEGAR EL LINK NUEVO QUE TE DE APPS SCRIPT
+    const SCRIPT_URL = 'PONER_TU_LINK_AQUI';
 
     function switchTab(tabId) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -120,7 +118,6 @@
         document.getElementById('tab-' + tabId).classList.add('active');
         document.getElementById('btn-' + tabId).classList.add('active');
         
-        // Auto-refresh al abrir el dashboard
         if(tabId === 'dash') {
             traerDatosReales();
         }
@@ -165,6 +162,11 @@
     }
 
     function traerDatosReales() {
+        if(SCRIPT_URL === 'PONER_TU_LINK_AQUI') {
+            alert('Falta pegar el link de Apps Script en el código HTML.');
+            return;
+        }
+
         const btn = document.getElementById('btn-sync');
         if(btn) {
             btn.innerText = '⏳ Sincronizando...';
@@ -184,9 +186,8 @@
                 }
             })
             .catch(error => {
-                console.warn('Apps Script GET no configurado. Mostrando datos mockeados.');
-                alert('Aún no configuramos la lectura en Apps Script. Mostrando datos de prueba.');
-                renderizarDashboardMock();
+                console.error(error);
+                alert('Error al leer los datos de Sheets.');
                 if(btn) {
                     btn.innerText = '🔄 Sincronizar con Sheets';
                     btn.disabled = false;
@@ -195,30 +196,35 @@
     }
 
     function renderizarDashboard(datos) {
-        // Filtrar pendientes (Interés Alto sin estado de envío - ajustá según las columnas de tu Sheets)
-        // Como tu form actual no tiene campo "estado", asumimos que todos los "Alto" recién cargados son urgentes
-        const pendientes = datos.filter(fila => fila.interes && fila.interes.includes("Alto"));
+        // Filtrar pendientes: Interés Alto y que NO tengan estado "Propuesta Enviada" o "Cerrado"
+        const pendientes = datos.filter(fila => 
+            fila.interes && fila.interes.includes("Alto") && 
+            fila.estado_en_pipeline !== "Propuesta Enviada" && 
+            fila.estado_en_pipeline !== "Cerrado"
+        );
+        
         const pendientesHTML = pendientes.map(p => `
             <li class="visit-item">
-                <strong>${p.empresa || p["comercio_/_empresa"]}</strong>
-                <span>Rubro: ${p.rubro}</span>
+                <strong>${p.comercio}</strong>
+                <span>Pantallas: ${p.soporte_ofrecido}</span>
                 <div class="visit-meta">
-                    <span>📍 ${p.zona}</span>
+                    <span>📍 ${p.zona_geografica}</span>
                     <span style="color:#dc3545; font-weight:bold;">⏱️ Armar Propuesta</span>
                 </div>
             </li>
         `).join('');
         document.getElementById('pendientes-propuesta').innerHTML = pendientes.length ? pendientesHTML : '<li class="visit-empty">No hay propuestas pendientes. ¡Excelente!</li>';
 
-        // Filtrar Follow-ups (Fechas de próximo contacto)
+        // Filtrar Follow-ups: Buscar por la fecha de próximo contacto
         const hoy = new Date().toISOString().split('T')[0];
-        const followups = datos.filter(fila => fila.proximo_paso === hoy || fila["próximo_contacto"] === hoy);
+        const followups = datos.filter(fila => fila.fecha_de_proximo_contacto === hoy);
+        
         const followupsHTML = followups.map(f => `
             <li class="visit-item">
-                <strong>${f.empresa || f["comercio_/_empresa"]} - ${f.decisor}</strong>
-                <span>📞 ${f.telefono || f["whatsapp"]}</span>
+                <strong>${f.comercio} - ${f.nombre_del_contacto}</strong>
+                <span>📞 ${f.telefono}</span>
                 <div class="visit-meta">
-                    <span>Acción: ${f.accion}</span>
+                    <span>Acción: ${f.accion_ejecutada}</span>
                 </div>
             </li>
         `).join('');
@@ -227,14 +233,6 @@
         // KPIs
         document.getElementById('kpi-visitas').innerText = datos.length;
         document.getElementById('kpi-calientes').innerText = pendientes.length;
-    }
-
-    function renderizarDashboardMock() {
-        const mockDatos = [
-            { empresa: "Corralón El Amigo", rubro: "Construcción", zona: "Zona Sur", interes: "Alto", decisor: "Carlos", telefono: "3875123456", accion: "Visita Presencial" },
-            { empresa: "Farmacia San Francisco", rubro: "Salud", zona: "San Lorenzo Chico", interes: "Medio", decisor: "Ana", telefono: "3874112233", accion: "Contacto por WhatsApp" }
-        ];
-        renderizarDashboard(mockDatos);
     }
 </script>
 </body>
