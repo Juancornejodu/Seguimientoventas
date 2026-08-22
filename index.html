@@ -35,8 +35,8 @@
         
         .btn-update { background-color: #ffc107; border: none; border-radius: 4px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; color: #333; }
         
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); }
-        .modal-content { background-color: #fff; margin: 20% auto; padding: 20px; border-radius: 8px; width: 85%; max-width: 400px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); overflow-y: auto; }
+        .modal-content { background-color: #fff; margin: 10% auto; padding: 20px; border-radius: 8px; width: 85%; max-width: 400px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
         .close-btn { color: #aaa; float: right; font-size: 24px; font-weight: bold; cursor: pointer; margin-top: -10px;}
         .close-btn:hover { color: #000; }
 
@@ -59,8 +59,9 @@
             <div class="form-group"><label>Comercio / Empresa *</label><input type="text" name="empresa" required></div>
             <div class="form-group"><label>Zona / Corredor *</label><select name="zona" required><option value="Centro - Peatonales">Centro - Peatonales</option><option value="Centro - Microcentro">Centro - Microcentro</option><option value="San Lorenzo Chico">San Lorenzo Chico</option><option value="Zona Norte">Zona Norte</option><option value="Zona Sur">Zona Sur</option></select></div>
             <div class="form-group"><label>Rubro *</label><select name="rubro" required><option value="Automotor">Automotor</option><option value="Construcción y Corralón">Construcción y Corralón</option><option value="Gastronomía">Gastronomía</option><option value="Indumentaria y Retail">Indumentaria y Retail</option><option value="Salud y Farmacia">Salud y Farmacia</option><option value="Otro">Otro</option></select></div>
-            <div class="form-group"><label>Contacto (Decisor) *</label><input type="text" name="decisor" required></div>
-            <div class="form-group"><label>WhatsApp *</label><input type="tel" name="telefono" required></div>
+            
+            <div class="form-group"><label>Contacto (Decisor)</label><input type="text" name="decisor"></div>
+            <div class="form-group"><label>WhatsApp</label><input type="tel" name="telefono"></div>
             
             <div class="form-group">
                 <label>Soporte Ofrecido *</label>
@@ -86,16 +87,17 @@
             
             <div class="form-group"><label>Acción Ejecutada *</label><select name="accion" required><option value="Carga en Base">Carga en Base</option><option value="Visita Presencial">Visita Presencial</option><option value="Contacto por WhatsApp">Contacto por WhatsApp</option><option value="Reunión Agendada">Reunión Agendada</option></select></div>
             <div class="form-group"><label>Interés *</label><select name="interes" required><option value="Sin Definir">⚪ Sin Definir</option><option value="Alto">🔥 Alto (Cotización)</option><option value="Medio">🟡 Medio (Info General)</option><option value="Bajo">🧊 Bajo (Sin ppto)</option><option value="Nulo">❌ Nulo</option></select></div>
-            <div class="form-group"><label>Fecha de Próximo Contacto *</label><input type="date" name="proximo_paso" required></div>
+            
+            <div class="form-group"><label>Fecha de Próximo Contacto</label><input type="date" name="proximo_paso"></div>
             
             <div class="form-group">
-                <label>Detalle Próxima Acción *</label>
-                <select name="detalle_proxima_accion" required>
+                <label>Detalle Próxima Acción</label>
+                <select name="detalle_proxima_accion">
+                    <option value="Ninguna">Ninguna</option>
                     <option value="Visitar presencialmente">Visitar presencialmente</option>
                     <option value="Enviar Propuesta">Enviar Propuesta</option>
                     <option value="Llamada">Llamada</option>
                     <option value="Mensaje de WhatsApp">Mensaje de WhatsApp</option>
-                    <option value="Ninguna">Ninguna</option>
                 </select>
             </div>
 
@@ -192,6 +194,18 @@
                 </select>
             </div>
 
+            <div style="background-color: #f8f9fa; padding: 10px; border-radius: 4px; margin-bottom: 15px; border: 1px solid #dee2e6;">
+                <p style="margin: 0 0 10px 0; font-size: 12px; font-weight: bold; color: #6c757d;">DATOS DEL CLIENTE (Opcional)</p>
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <label style="font-size: 12px;">Actualizar Nombre del Contacto</label>
+                    <input type="text" name="decisor_update" id="modal-decisor" placeholder="Dejar en blanco si no cambió">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label style="font-size: 12px;">Actualizar WhatsApp</label>
+                    <input type="tel" name="telefono_update" id="modal-telefono" placeholder="Dejar en blanco si no cambió">
+                </div>
+            </div>
+
             <div class="form-group">
                 <label>Próxima Acción a realizar</label>
                 <select name="detalle_proxima_accion" required>
@@ -217,7 +231,7 @@
 </div>
 
 <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxshI1ASf_VwxTqWWuOc5Jxs4Jhv1nfylpXX4dcHbX5FNh-eenf70rJixXyADxP7SyzSA/exec'; // ASEGURATE DE QUE ESTE SEA EL CORRECTO
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxshI1ASf_VwxTqWWuOc5Jxs4Jhv1nfylpXX4dcHbX5FNh-eenf70rJixXyADxP7SyzSA/exec'; // PEGAR ACA EL LINK
     let datosGlobales = [];
     let chartInstance = null;
 
@@ -295,16 +309,17 @@
         enDosDias.setDate(hoy.getDate() + 2);
         const limitesStr = `${enDosDias.getFullYear()}-${String(enDosDias.getMonth() + 1).padStart(2, '0')}-${String(enDosDias.getDate()).padStart(2, '0')}`;
 
-        // Filtro maestro: Solo los que no estén Ganados/Perdidos y tengan fecha asignada
+        // Filtro maestro: Solo clientes activos (no ganados/perdidos) con fecha de contacto definida
         let activos = datos.filter(f => 
             f.estado_en_pipeline !== "Ganado" && 
             f.estado_en_pipeline !== "Perdido" && 
-            f.fecha_de_proximo_contacto
+            f.fecha_de_proximo_contacto &&
+            f.fecha_de_proximo_contacto !== ""
         );
 
-        // 1. VISITAS (Atrasadas, Hoy y próximos 2 días)
+        // 1. VISITAS (Acción relacionada a visita, dentro del rango <= limitesStr)
         let visitasAgenda = activos.filter(f => 
-            (f.estado_en_pipeline === "Visita Programada" || (f.detalle_proxima_accion && f.detalle_proxima_accion.includes("Visita"))) &&
+            (f.detalle_proxima_accion && f.detalle_proxima_accion.toLowerCase().includes("visita")) &&
             f.fecha_de_proximo_contacto <= limitesStr
         );
         visitasAgenda.sort((a, b) => a.fecha_de_proximo_contacto.localeCompare(b.fecha_de_proximo_contacto));
@@ -316,9 +331,9 @@
         }).join('');
         document.getElementById('visitas-hoy').innerHTML = visitasAgenda.length ? visitasHTML : '<li class="visit-empty">No hay visitas pendientes en los próximos 3 días.</li>';
 
-        // 2. SEGUIMIENTOS (Atrasados, Hoy y próximos 2 días que NO sean visitas)
+        // 2. SEGUIMIENTOS (Acciones NO relacionadas a visita, dentro del rango <= limitesStr)
         let seguimientos = activos.filter(f => 
-            !(f.estado_en_pipeline === "Visita Programada" || (f.detalle_proxima_accion && f.detalle_proxima_accion.includes("Visita"))) &&
+            !(f.detalle_proxima_accion && f.detalle_proxima_accion.toLowerCase().includes("visita")) &&
             f.fecha_de_proximo_contacto <= limitesStr
         );
         seguimientos.sort((a, b) => a.fecha_de_proximo_contacto.localeCompare(b.fecha_de_proximo_contacto));
@@ -330,7 +345,7 @@
         }).join('');
         document.getElementById('seguimientos-activos').innerHTML = seguimientos.length ? seguimientosHTML : '<li class="visit-empty">No hay seguimientos en los próximos 3 días.</li>';
 
-        // 3. ACCIONES FUTURAS (Cualquier acción programada para más allá de 2 días)
+        // 3. ACCIONES FUTURAS (Cualquier acción programada > limitesStr)
         let accionesFuturas = activos.filter(f => f.fecha_de_proximo_contacto > limitesStr);
         accionesFuturas.sort((a, b) => a.fecha_de_proximo_contacto.localeCompare(b.fecha_de_proximo_contacto));
         const futurasHTML = accionesFuturas.map(f => {
@@ -351,15 +366,20 @@
         if(cliente.estado_en_pipeline === "Ganado") emoji = "🏆 ";
         if(cliente.estado_en_pipeline === "Perdido") emoji = "❌ ";
         
+        let contactoStr = cliente.nombre_del_contacto ? cliente.nombre_del_contacto : 'Sin contacto';
+        let telStr = cliente.telefono ? cliente.telefono : 'Sin teléfono';
+        
         return `
             <li class="visit-item">
                 <div class="header-item">
                     <strong>${emoji}${cliente.comercio || 'Sin Nombre'}</strong>
-                    <button class="btn-update" onclick="abrirModal(${cliente.row_index}, '${cliente.comercio}', '${cliente.estado_en_pipeline}', '${cliente.interes}')">✏️ Actualizar</button>
+                    <button class="btn-update" onclick="abrirModal(${cliente.row_index}, '${cliente.comercio}', '${cliente.estado_en_pipeline}', '${cliente.interes}', '${cliente.nombre_del_contacto || ''}', '${cliente.telefono || ''}')">✏️ Actualizar</button>
                 </div>
                 <span>${cliente.zona_geografica} | ${cliente.rubro}</span>
                 <div class="visit-meta">
-                    <span>📞 ${cliente.telefono}</span>
+                    <span>👤 ${contactoStr} - 📞 ${telStr}</span>
+                </div>
+                <div class="visit-meta" style="margin-top:4px;">
                     <span style="color:${metaColor}; font-weight:bold;">${metaTexto}</span>
                 </div>
             </li>
@@ -375,13 +395,16 @@
         renderizarDirectorio(filtrados);
     }
 
-    function abrirModal(rowIndex, empresa, estadoActual, interesActual) {
+    function abrirModal(rowIndex, empresa, estadoActual, interesActual, contactoActual, telActual) {
         document.getElementById('update_row_index').value = rowIndex;
         document.getElementById('modalEmpresaNombre').innerText = "Interacción: " + empresa;
         
         const form = document.getElementById('updateForm');
         if(estadoActual) form.estado_pipeline.value = estadoActual;
         if(interesActual) form.interes.value = interesActual;
+        
+        document.getElementById('modal-decisor').value = contactoActual !== 'undefined' ? contactoActual : '';
+        document.getElementById('modal-telefono').value = telActual !== 'undefined' ? telActual : '';
 
         document.getElementById('updateModal').style.display = "block";
     }
