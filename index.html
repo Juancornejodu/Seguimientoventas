@@ -57,6 +57,7 @@
     <div id="tab-form" class="tab-content active">
         <form id="crmForm">
             <div class="form-group"><label>Comercio / Empresa *</label><input type="text" name="empresa" required></div>
+            <div class="form-group"><label>Dirección</label><input type="text" name="direccion" placeholder="Ej: Av. Paraguay 1150"></div>
             <div class="form-group"><label>Zona / Corredor *</label><select name="zona" required><option value="Centro - Peatonales">Centro - Peatonales</option><option value="Centro - Microcentro">Centro - Microcentro</option><option value="San Lorenzo Chico">San Lorenzo Chico</option><option value="Zona Norte">Zona Norte</option><option value="Zona Sur">Zona Sur</option></select></div>
             <div class="form-group"><label>Rubro *</label><select name="rubro" required><option value="Automotor">Automotor</option><option value="Construcción y Corralón">Construcción y Corralón</option><option value="Gastronomía">Gastronomía</option><option value="Indumentaria y Retail">Indumentaria y Retail</option><option value="Salud y Farmacia">Salud y Farmacia</option><option value="Otro">Otro</option></select></div>
             
@@ -197,6 +198,10 @@
             <div style="background-color: #f8f9fa; padding: 10px; border-radius: 4px; margin-bottom: 15px; border: 1px solid #dee2e6;">
                 <p style="margin: 0 0 10px 0; font-size: 12px; font-weight: bold; color: #6c757d;">DATOS DEL CLIENTE (Opcional)</p>
                 <div class="form-group" style="margin-bottom: 10px;">
+                    <label style="font-size: 12px;">Actualizar Dirección</label>
+                    <input type="text" name="direccion_update" id="modal-direccion" placeholder="Dejar en blanco si no cambió">
+                </div>
+                <div class="form-group" style="margin-bottom: 10px;">
                     <label style="font-size: 12px;">Actualizar Nombre del Contacto</label>
                     <input type="text" name="decisor_update" id="modal-decisor" placeholder="Dejar en blanco si no cambió">
                 </div>
@@ -231,7 +236,7 @@
 </div>
 
 <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxshI1ASf_VwxTqWWuOc5Jxs4Jhv1nfylpXX4dcHbX5FNh-eenf70rJixXyADxP7SyzSA/exec'; // PEGAR ACA EL LINK
+    const SCRIPT_URL = 'PEGAR_ACA_TU_LINK_DE_APPS_SCRIPT_NUEVO'; // REEMPLAZÁ CON TU NUEVO LINK
     let datosGlobales = [];
     let chartInstance = null;
 
@@ -309,7 +314,6 @@
         enDosDias.setDate(hoy.getDate() + 2);
         const limitesStr = `${enDosDias.getFullYear()}-${String(enDosDias.getMonth() + 1).padStart(2, '0')}-${String(enDosDias.getDate()).padStart(2, '0')}`;
 
-        // Filtro maestro: Solo clientes activos (no ganados/perdidos) con fecha de contacto definida
         let activos = datos.filter(f => 
             f.estado_en_pipeline !== "Ganado" && 
             f.estado_en_pipeline !== "Perdido" && 
@@ -317,7 +321,7 @@
             f.fecha_de_proximo_contacto !== ""
         );
 
-        // 1. VISITAS (Acción relacionada a visita, dentro del rango <= limitesStr)
+        // 1. VISITAS
         let visitasAgenda = activos.filter(f => 
             (f.detalle_proxima_accion && f.detalle_proxima_accion.toLowerCase().includes("visita")) &&
             f.fecha_de_proximo_contacto <= limitesStr
@@ -331,7 +335,7 @@
         }).join('');
         document.getElementById('visitas-hoy').innerHTML = visitasAgenda.length ? visitasHTML : '<li class="visit-empty">No hay visitas pendientes en los próximos 3 días.</li>';
 
-        // 2. SEGUIMIENTOS (Acciones NO relacionadas a visita, dentro del rango <= limitesStr)
+        // 2. SEGUIMIENTOS
         let seguimientos = activos.filter(f => 
             !(f.detalle_proxima_accion && f.detalle_proxima_accion.toLowerCase().includes("visita")) &&
             f.fecha_de_proximo_contacto <= limitesStr
@@ -345,7 +349,7 @@
         }).join('');
         document.getElementById('seguimientos-activos').innerHTML = seguimientos.length ? seguimientosHTML : '<li class="visit-empty">No hay seguimientos en los próximos 3 días.</li>';
 
-        // 3. ACCIONES FUTURAS (Cualquier acción programada > limitesStr)
+        // 3. ACCIONES FUTURAS
         let accionesFuturas = activos.filter(f => f.fecha_de_proximo_contacto > limitesStr);
         accionesFuturas.sort((a, b) => a.fecha_de_proximo_contacto.localeCompare(b.fecha_de_proximo_contacto));
         const futurasHTML = accionesFuturas.map(f => {
@@ -368,16 +372,17 @@
         
         let contactoStr = cliente.nombre_del_contacto ? cliente.nombre_del_contacto : 'Sin contacto';
         let telStr = cliente.telefono ? cliente.telefono : 'Sin teléfono';
+        let dirStr = cliente.direccion ? `<br>🗺️ ${cliente.direccion}` : ''; // Agregamos la dirección acá
         
         return `
             <li class="visit-item">
                 <div class="header-item">
                     <strong>${emoji}${cliente.comercio || 'Sin Nombre'}</strong>
-                    <button class="btn-update" onclick="abrirModal(${cliente.row_index}, '${cliente.comercio}', '${cliente.estado_en_pipeline}', '${cliente.interes}', '${cliente.nombre_del_contacto || ''}', '${cliente.telefono || ''}')">✏️ Actualizar</button>
+                    <button class="btn-update" onclick="abrirModal(${cliente.row_index}, '${cliente.comercio}', '${cliente.estado_en_pipeline}', '${cliente.interes}', '${cliente.nombre_del_contacto || ''}', '${cliente.telefono || ''}', '${cliente.direccion || ''}')">✏️ Actualizar</button>
                 </div>
                 <span>${cliente.zona_geografica} | ${cliente.rubro}</span>
                 <div class="visit-meta">
-                    <span>👤 ${contactoStr} - 📞 ${telStr}</span>
+                    <span>👤 ${contactoStr} - 📞 ${telStr} ${dirStr}</span>
                 </div>
                 <div class="visit-meta" style="margin-top:4px;">
                     <span style="color:${metaColor}; font-weight:bold;">${metaTexto}</span>
@@ -395,7 +400,7 @@
         renderizarDirectorio(filtrados);
     }
 
-    function abrirModal(rowIndex, empresa, estadoActual, interesActual, contactoActual, telActual) {
+    function abrirModal(rowIndex, empresa, estadoActual, interesActual, contactoActual, telActual, dirActual) {
         document.getElementById('update_row_index').value = rowIndex;
         document.getElementById('modalEmpresaNombre').innerText = "Interacción: " + empresa;
         
@@ -405,6 +410,7 @@
         
         document.getElementById('modal-decisor').value = contactoActual !== 'undefined' ? contactoActual : '';
         document.getElementById('modal-telefono').value = telActual !== 'undefined' ? telActual : '';
+        document.getElementById('modal-direccion').value = dirActual !== 'undefined' ? dirActual : '';
 
         document.getElementById('updateModal').style.display = "block";
     }
