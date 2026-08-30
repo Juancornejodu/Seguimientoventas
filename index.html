@@ -18,12 +18,14 @@
         input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit;}
         select[multiple] { height: 140px; padding: 5px; } 
         button.btn-submit { width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
+        button.btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
         
         .dash-card { background: #f8f9fa; border-left: 4px solid #0056b3; padding: 15px; margin-bottom: 15px; border-radius: 4px; }
         .dash-card h3 { margin: 0 0 10px 0; font-size: 16px; color: #333; }
         .dash-number { font-size: 24px; font-weight: bold; color: #0056b3; }
         .alert-red { border-left-color: #dc3545; }
         .alert-red .dash-number { color: #dc3545; }
+        .alert-purple { border-left-color: #6f42c1; }
         .ayuda-texto { font-size: 12px; color: #666; margin-top: 4px; display: block; }
         
         .visit-list { list-style: none; padding: 0; margin: 10px 0 0 0; }
@@ -89,7 +91,7 @@
             <div class="form-group"><label>Acción Ejecutada *</label><select name="accion" required><option value="Carga en Base">Carga en Base</option><option value="Visita Presencial">Visita Presencial</option><option value="Contacto por WhatsApp">Contacto por WhatsApp</option><option value="Reunión Agendada">Reunión Agendada</option></select></div>
             <div class="form-group"><label>Interés *</label><select name="interes" required><option value="Sin Definir">⚪ Sin Definir</option><option value="Alto">🔥 Alto (Cotización)</option><option value="Medio">🟡 Medio (Info General)</option><option value="Bajo">🧊 Bajo (Sin ppto)</option><option value="Nulo">❌ Nulo</option></select></div>
             
-            <div class="form-group"><label>Fecha de Próximo Contacto</label><input type="date" name="proximo_paso"></div>
+            <div class="form-group"><label>Fecha de Próximo Contacto *</label><input type="date" name="proximo_paso" required></div>
             
             <div class="form-group">
                 <label>Detalle Próxima Acción</label>
@@ -109,6 +111,11 @@
 
     <!-- PESTAÑA 2: AGENDA -->
     <div id="tab-dash" class="tab-content">
+        <div class="dash-card alert-purple">
+            <h3>⚠️ Sin próxima acción definida</h3>
+            <p class="ayuda-texto">Clientes activos sin fecha de próximo contacto cargada. Actualizalos para que no queden colgados.</p>
+            <ul class="visit-list" id="sin-fecha"><li class="visit-empty">Cargando datos...</li></ul>
+        </div>
         <div class="dash-card alert-red">
             <h3>🚨 Visitas (Próximos 3 días)</h3>
             <ul class="visit-list" id="visitas-hoy"><li class="visit-empty">Cargando datos...</li></ul>
@@ -130,14 +137,17 @@
             <div class="dash-card" style="flex: 1; min-width: 30%; padding: 10px; margin-bottom: 0;">
                 <h3 style="font-size:14px; margin-bottom:5px;">🏃 Visitas (Semana)</h3>
                 <div class="dash-number" id="kpi-visitas" style="font-size:20px; color:#0056b3;">0 / 30</div>
+                <span class="ayuda-texto" style="margin-top:2px;">Se reinicia todos los lunes</span>
             </div>
             <div class="dash-card" style="flex: 1; min-width: 30%; padding: 10px; margin-bottom: 0;">
                 <h3 style="font-size:14px; margin-bottom:5px;">Win Rate</h3>
                 <div class="dash-number" id="kpi-winrate" style="font-size:20px; color:#28a745;">0%</div>
+                <span class="ayuda-texto" style="margin-top:2px;">Sobre total histórico cerrado</span>
             </div>
             <div class="dash-card" style="flex: 1; min-width: 30%; padding: 10px; margin-bottom: 0;">
                 <h3 style="font-size:14px; margin-bottom:5px;">Perdidos</h3>
                 <div class="dash-number" id="kpi-perdidos" style="font-size:20px; color:#dc3545;">0%</div>
+                <span class="ayuda-texto" style="margin-top:2px;">Sobre total histórico cerrado</span>
             </div>
         </div>
         
@@ -173,6 +183,19 @@
         <form id="updateForm">
             <input type="hidden" id="update_row_index" name="row_index">
             <input type="hidden" name="action_type" value="update">
+
+            <div class="form-group">
+                <label>Acción Ejecutada en esta interacción *</label>
+                <select name="accion_ejecutada" required>
+                    <option value="Visita Presencial">🚗 Visita Presencial</option>
+                    <option value="Llamada">📞 Llamada</option>
+                    <option value="Mensaje de WhatsApp">💬 Mensaje de WhatsApp</option>
+                    <option value="Reunión">🤝 Reunión</option>
+                    <option value="Envío de Propuesta">📄 Envío de Propuesta</option>
+                    <option value="Otro">Otro</option>
+                </select>
+                <span class="ayuda-texto">Esto es lo que suma al contador de visitas semanales.</span>
+            </div>
             
             <div class="form-group">
                 <label>Nuevo Estado</label>
@@ -237,7 +260,8 @@
 
 <script>
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbztWuRAVpWMwVyEzeOAmn1vqdjUyQ1d_ENQuTELB6Sf-beEvJCmjlAJwjoHzqfGr2qnVg/exec'; // REEMPLAZÁ CON TU NUEVO LINK
-    let datosGlobales = [];
+    const META_VISITAS_SEMANALES = 30;
+    let datosGlobales = { clientes: [], interacciones: [] };
     let chartInstance = null;
 
     function switchTab(tabId) {
@@ -247,10 +271,8 @@
         document.getElementById('btn-' + tabId).classList.add('active');
         
         if(tabId === 'dash' || tabId === 'directorio' || tabId === 'metricas') {
-            if (datosGlobales.length === 0) traerDatosReales();
-            else {
-                if(tabId === 'metricas') renderizarGraficos(datosGlobales);
-            }
+            if (datosGlobales.clientes.length === 0) traerDatosReales();
+            else if(tabId === 'metricas') renderizarGraficos(datosGlobales.clientes, datosGlobales.interacciones);
         }
     }
 
@@ -266,29 +288,40 @@
         const opcionesSeleccionadas = Array.from(selectSoporte.selectedOptions).map(opt => opt.value);
         formData.set('soporte', opcionesSeleccionadas.includes("Todas") ? 'Todas' : opcionesSeleccionadas.join(' / '));
 
+        const countAntes = datosGlobales.interacciones.length;
+
         fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: new URLSearchParams(formData) })
+        .then(() => new Promise(res => setTimeout(res, 1200))) // le da tiempo a la planilla a propagar el guardado
+        .then(() => traerDatosReales(true))
         .then(() => {
-            alert('¡Cliente nuevo guardado!');
-            form.reset();
+            const guardadoOk = datosGlobales.interacciones.length > countAntes;
+            if (guardadoOk) {
+                alert('¡Cliente nuevo guardado!');
+                form.reset();
+            } else {
+                alert('⚠️ No se pudo confirmar el guardado. Sincronizá de nuevo y, si el cliente no aparece, reintentá.');
+            }
             btn.innerText = '📤 Guardar Nuevo Cliente'; btn.disabled = false;
-            traerDatosReales();
         }).catch(() => {
             alert('Error de conexión.');
             btn.innerText = '📤 Guardar Nuevo Cliente'; btn.disabled = false;
         });
     }
 
-    function traerDatosReales() {
+    function traerDatosReales(silencioso) {
         const btnSyncs = document.querySelectorAll('#btn-sync, #tab-metricas .btn-submit');
-        btnSyncs.forEach(btn => { if(btn) { btn.innerText = '⏳ Cargando...'; btn.disabled = true; } });
+        if(!silencioso) btnSyncs.forEach(btn => { if(btn) { btn.innerText = '⏳ Cargando...'; btn.disabled = true; } });
 
-        fetch(SCRIPT_URL)
+        return fetch(SCRIPT_URL)
             .then(r => r.json())
             .then(datos => {
-                datosGlobales = datos.reverse();
-                renderizarAgenda(datosGlobales);
-                renderizarDirectorio(datosGlobales);
-                renderizarGraficos(datosGlobales);
+                datosGlobales = {
+                    clientes: (datos.clientes || []).slice().reverse(),
+                    interacciones: datos.interacciones || []
+                };
+                renderizarAgenda(datosGlobales.clientes);
+                renderizarDirectorio(datosGlobales.clientes);
+                renderizarGraficos(datosGlobales.clientes, datosGlobales.interacciones);
                 btnSyncs.forEach(btn => { 
                     if(btn) { 
                         btn.innerText = btn.id === 'btn-sync' ? '🔄 Sincronizar Agenda' : '🔄 Actualizar Gráficos'; 
@@ -313,6 +346,16 @@
         const enDosDias = new Date();
         enDosDias.setDate(hoy.getDate() + 2);
         const limitesStr = `${enDosDias.getFullYear()}-${String(enDosDias.getMonth() + 1).padStart(2, '0')}-${String(enDosDias.getDate()).padStart(2, '0')}`;
+
+        // WATCHDOG: clientes activos sin fecha de próximo contacto — antes eran
+        // completamente invisibles en la Agenda. Ahora se listan primero.
+        let sinFecha = datos.filter(f =>
+            f.estado_en_pipeline !== "Ganado" &&
+            f.estado_en_pipeline !== "Perdido" &&
+            (!f.fecha_de_proximo_contacto || f.fecha_de_proximo_contacto === "")
+        );
+        const sinFechaHTML = sinFecha.map(f => crearTarjetaCliente(f, '⚠️ Sin fecha de próxima acción — actualizar ya', '#6f42c1')).join('');
+        document.getElementById('sin-fecha').innerHTML = sinFecha.length ? sinFechaHTML : '<li class="visit-empty">Todos los clientes activos tienen una próxima acción definida. 👍</li>';
 
         let activos = datos.filter(f => 
             f.estado_en_pipeline !== "Ganado" && 
@@ -372,7 +415,7 @@
         
         let contactoStr = cliente.nombre_del_contacto ? cliente.nombre_del_contacto : 'Sin contacto';
         let telStr = cliente.telefono ? cliente.telefono : 'Sin teléfono';
-        let dirStr = cliente.direccion ? `<br>🗺️ ${cliente.direccion}` : ''; // Agregamos la dirección acá
+        let dirStr = cliente.direccion ? `<br>🗺️ ${cliente.direccion}` : '';
         
         return `
             <li class="visit-item">
@@ -393,7 +436,7 @@
 
     function filtrarDirectorio() {
         const texto = document.getElementById('buscador').value.toLowerCase();
-        const filtrados = datosGlobales.filter(c => 
+        const filtrados = datosGlobales.clientes.filter(c => 
             (c.comercio && c.comercio.toLowerCase().includes(texto)) || 
             (c.rubro && c.rubro.toLowerCase().includes(texto))
         );
@@ -423,23 +466,30 @@
         if(!form.checkValidity()){ form.reportValidity(); return; }
 
         btn.innerText = 'Guardando...'; btn.disabled = true;
+        const countAntes = datosGlobales.interacciones.length;
 
         fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: new URLSearchParams(new FormData(form)) })
+        .then(() => new Promise(res => setTimeout(res, 1200)))
+        .then(() => traerDatosReales(true))
         .then(() => {
-            alert('¡Interacción guardada en historial!');
-            cerrarModal();
-            form.reset();
+            const guardadoOk = datosGlobales.interacciones.length > countAntes;
+            if (guardadoOk) {
+                alert('¡Interacción guardada en historial!');
+                cerrarModal();
+                form.reset();
+            } else {
+                alert('⚠️ No se pudo confirmar el guardado. Sincronizá de nuevo y, si no se refleja, reintentá.');
+            }
             btn.innerText = 'Guardar Interacción'; btn.disabled = false;
-            traerDatosReales(); 
         }).catch(() => {
             alert('Error al actualizar.');
             btn.innerText = 'Guardar Interacción'; btn.disabled = false;
         });
     }
 
-    function renderizarGraficos(datos) {
-        const ganados = datos.filter(d => d.estado_en_pipeline === "Ganado").length;
-        const perdidos = datos.filter(d => d.estado_en_pipeline === "Perdido").length;
+    function renderizarGraficos(clientes, interacciones) {
+        const ganados = clientes.filter(d => d.estado_en_pipeline === "Ganado").length;
+        const perdidos = clientes.filter(d => d.estado_en_pipeline === "Perdido").length;
         const totalesCerrados = ganados + perdidos;
         
         let winRate = 0;
@@ -452,18 +502,23 @@
         document.getElementById('kpi-winrate').innerText = winRate + "%";
         document.getElementById('kpi-perdidos').innerText = lossRate + "%";
 
+        // Lunes 00:00 de esta semana (hora local), sin mutar el objeto Date original
         const hoy = new Date();
-        const diaSemana = hoy.getDay(); 
-        const diffToMonday = hoy.getDate() - diaSemana + (diaSemana === 0 ? -6 : 1);
-        const fechaLunes = new Date(hoy.setDate(diffToMonday));
-        fechaLunes.setHours(0,0,0,0);
-        
-        const visitasEstaSemana = datos.filter(f => {
-            const fechaVisita = new Date(f.timestamp);
-            return fechaVisita >= fechaLunes && (f.estado_en_pipeline === "Visita Programada" || f.accion === "Visita Presencial");
+        const diaSemana = hoy.getDay(); // 0 = domingo ... 6 = sábado
+        const diffLunes = diaSemana === 0 ? -6 : 1 - diaSemana;
+        const fechaLunes = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + diffLunes, 0, 0, 0);
+
+        // Visitas semanales calculadas sobre EVENTOS reales del log de
+        // interacciones (no sobre el estado actual del cliente), así una
+        // visita cuenta aunque después actualices al cliente a otro estado.
+        const visitasEstaSemana = (interacciones || []).filter(i => {
+            const tipo = (i.tipo_de_accion || '').toLowerCase();
+            if (!tipo.includes('visita')) return false;
+            const fecha = new Date(i.timestamp);
+            return fecha >= fechaLunes;
         }).length;
-        
-        document.getElementById('kpi-visitas').innerText = visitasEstaSemana + " / 15";
+
+        document.getElementById('kpi-visitas').innerText = visitasEstaSemana + " / " + META_VISITAS_SEMANALES;
 
         const counts = {
             "Prospecto": 0,
@@ -472,7 +527,7 @@
             "Propuesta Enviada": 0
         };
 
-        datos.forEach(d => {
+        clientes.forEach(d => {
             if (counts.hasOwnProperty(d.estado_en_pipeline)) {
                 counts[d.estado_en_pipeline]++;
             } else if (d.estado_en_pipeline === "En Negociación" || d.estado_en_pipeline === "Pendiente") {
