@@ -349,31 +349,31 @@
             f.fecha_de_proximo_contacto !== ""
         );
 
-        // 1. VISITAS: próxima acción es una visita Y está dentro de los próximos 3 días (o atrasada)
+        // 1. VISITAS: próxima acción es una visita Y está entre hoy y los próximos 3 días (lo atrasado no se muestra)
         let visitasAgenda = activos.filter(f => 
             (f.detalle_proxima_accion && f.detalle_proxima_accion.toLowerCase().includes("visita")) &&
+            f.fecha_de_proximo_contacto >= hoyStr &&
             f.fecha_de_proximo_contacto <= limitesStr
         );
         visitasAgenda.sort((a, b) => a.fecha_de_proximo_contacto.localeCompare(b.fecha_de_proximo_contacto));
         const visitasHTML = visitasAgenda.map(p => {
             let f = p.fecha_de_proximo_contacto.split('-');
             let fLegible = f.length === 3 ? `${f[2]}/${f[1]}` : p.fecha_de_proximo_contacto;
-            let alerta = p.fecha_de_proximo_contacto < hoyStr ? ' ⚠️ (Atrasada)' : '';
-            return crearTarjetaCliente(p, `📍 [${fLegible}] Acción: ` + p.detalle_proxima_accion + alerta, '#dc3545');
+            return crearTarjetaCliente(p, `📍 [${fLegible}] Acción: ` + p.detalle_proxima_accion, '#dc3545');
         }).join('');
         document.getElementById('visitas-hoy').innerHTML = visitasAgenda.length ? visitasHTML : '<li class="visit-empty">No hay visitas pendientes en los próximos 3 días.</li>';
 
-        // 2. SEGUIMIENTOS: próxima acción NO es una visita Y está dentro de los próximos 3 días (o atrasada)
+        // 2. SEGUIMIENTOS: próxima acción NO es una visita Y está entre hoy y los próximos 3 días (lo atrasado no se muestra)
         let seguimientos = activos.filter(f => 
             !(f.detalle_proxima_accion && f.detalle_proxima_accion.toLowerCase().includes("visita")) &&
+            f.fecha_de_proximo_contacto >= hoyStr &&
             f.fecha_de_proximo_contacto <= limitesStr
         );
         seguimientos.sort((a, b) => a.fecha_de_proximo_contacto.localeCompare(b.fecha_de_proximo_contacto));
         const seguimientosHTML = seguimientos.map(f => {
             let fc = f.fecha_de_proximo_contacto.split('-');
             let fLegible = fc.length === 3 ? `${fc[2]}/${fc[1]}` : f.fecha_de_proximo_contacto;
-            let alerta = f.fecha_de_proximo_contacto < hoyStr ? ' ⚠️ (Atrasado)' : '';
-            return crearTarjetaCliente(f, `➡️ [${fLegible}] Acción: ` + f.detalle_proxima_accion + alerta, '#0056b3');
+            return crearTarjetaCliente(f, `➡️ [${fLegible}] Acción: ` + f.detalle_proxima_accion, '#0056b3');
         }).join('');
         document.getElementById('seguimientos-activos').innerHTML = seguimientos.length ? seguimientosHTML : '<li class="visit-empty">No hay seguimientos en los próximos 3 días.</li>';
 
