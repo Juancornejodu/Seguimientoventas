@@ -25,7 +25,6 @@
         .dash-number { font-size: 24px; font-weight: bold; color: #0056b3; }
         .alert-red { border-left-color: #dc3545; }
         .alert-red .dash-number { color: #dc3545; }
-        .alert-purple { border-left-color: #6f42c1; }
         .ayuda-texto { font-size: 12px; color: #666; margin-top: 4px; display: block; }
         
         .visit-list { list-style: none; padding: 0; margin: 10px 0 0 0; }
@@ -111,11 +110,6 @@
 
     <!-- PESTAÑA 2: AGENDA -->
     <div id="tab-dash" class="tab-content">
-        <div class="dash-card alert-purple">
-            <h3>⚠️ Sin próxima acción definida</h3>
-            <p class="ayuda-texto">Clientes activos sin fecha de próximo contacto cargada. Actualizalos para que no queden colgados.</p>
-            <ul class="visit-list" id="sin-fecha"><li class="visit-empty">Cargando datos...</li></ul>
-        </div>
         <div class="dash-card alert-red">
             <h3>🚨 Visitas (Próximos 3 días)</h3>
             <ul class="visit-list" id="visitas-hoy"><li class="visit-empty">Cargando datos...</li></ul>
@@ -347,16 +341,7 @@
         enDosDias.setDate(hoy.getDate() + 2);
         const limitesStr = `${enDosDias.getFullYear()}-${String(enDosDias.getMonth() + 1).padStart(2, '0')}-${String(enDosDias.getDate()).padStart(2, '0')}`;
 
-        // WATCHDOG: clientes activos sin fecha de próximo contacto — antes eran
-        // completamente invisibles en la Agenda. Ahora se listan primero.
-        let sinFecha = datos.filter(f =>
-            f.estado_en_pipeline !== "Ganado" &&
-            f.estado_en_pipeline !== "Perdido" &&
-            (!f.fecha_de_proximo_contacto || f.fecha_de_proximo_contacto === "")
-        );
-        const sinFechaHTML = sinFecha.map(f => crearTarjetaCliente(f, '⚠️ Sin fecha de próxima acción — actualizar ya', '#6f42c1')).join('');
-        document.getElementById('sin-fecha').innerHTML = sinFecha.length ? sinFechaHTML : '<li class="visit-empty">Todos los clientes activos tienen una próxima acción definida. 👍</li>';
-
+        // Solo clientes activos (no Ganado/Perdido) CON fecha de próximo contacto cargada.
         let activos = datos.filter(f => 
             f.estado_en_pipeline !== "Ganado" && 
             f.estado_en_pipeline !== "Perdido" && 
@@ -364,7 +349,7 @@
             f.fecha_de_proximo_contacto !== ""
         );
 
-        // 1. VISITAS
+        // 1. VISITAS: próxima acción es una visita Y está dentro de los próximos 3 días (o atrasada)
         let visitasAgenda = activos.filter(f => 
             (f.detalle_proxima_accion && f.detalle_proxima_accion.toLowerCase().includes("visita")) &&
             f.fecha_de_proximo_contacto <= limitesStr
@@ -378,7 +363,7 @@
         }).join('');
         document.getElementById('visitas-hoy').innerHTML = visitasAgenda.length ? visitasHTML : '<li class="visit-empty">No hay visitas pendientes en los próximos 3 días.</li>';
 
-        // 2. SEGUIMIENTOS
+        // 2. SEGUIMIENTOS: próxima acción NO es una visita Y está dentro de los próximos 3 días (o atrasada)
         let seguimientos = activos.filter(f => 
             !(f.detalle_proxima_accion && f.detalle_proxima_accion.toLowerCase().includes("visita")) &&
             f.fecha_de_proximo_contacto <= limitesStr
@@ -392,7 +377,7 @@
         }).join('');
         document.getElementById('seguimientos-activos').innerHTML = seguimientos.length ? seguimientosHTML : '<li class="visit-empty">No hay seguimientos en los próximos 3 días.</li>';
 
-        // 3. ACCIONES FUTURAS
+        // 3. ACCIONES FUTURAS: fecha de próximo contacto más allá de los 3 días
         let accionesFuturas = activos.filter(f => f.fecha_de_proximo_contacto > limitesStr);
         accionesFuturas.sort((a, b) => a.fecha_de_proximo_contacto.localeCompare(b.fecha_de_proximo_contacto));
         const futurasHTML = accionesFuturas.map(f => {
